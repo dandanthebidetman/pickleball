@@ -98,7 +98,6 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;fon
     <button class="nb on" onclick="go('dashboard',this)">Dashboard</button>
     <button class="nb" onclick="go('players',this)">Players</button>
     <button class="nb" onclick="go('scores',this)">Scores</button>
-    <button class="nb" onclick="go('matches',this)">Matches</button>
     <button class="nb" onclick="go('leaderboard',this)">Leaderboard</button>
     <button class="nb" onclick="go('charts',this)">Charts</button>
     <button class="nb" onclick="go('submit',this)">Submit match</button>
@@ -215,24 +214,6 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;fon
       <tbody id="scores-player-tbody"></tbody>
     </table></div>
   </div>
-</div>
-
-<!-- ═══ MATCHES ═══ -->
-<div id="pg-matches" class="pg">
-  <div class="slbl">Log</div>
-  <div class="stitle">Match results</div>
-  <div class="pill-row" id="match-pills"></div>
-  <div class="minfo">
-    <span id="match-count"></span>
-    <select id="match-sort" onchange="renderMatches()" style="background:var(--bg3);color:var(--text);border:1px solid var(--border2);border-radius:7px;padding:4px 8px;font-size:12px;font-family:'DM Sans',sans-serif;cursor:pointer;outline:none">
-      <option value="newest">Newest first</option>
-      <option value="oldest">Oldest first</option>
-    </select>
-  </div>
-  <div class="tw"><table class="mt">
-    <thead><tr><th>Date</th><th>Type</th><th>Winner(s)</th><th>Loser(s)</th><th class="r">Score</th></tr></thead>
-    <tbody id="match-tbody"></tbody>
-  </table></div>
 </div>
 
 <!-- ═══ LEADERBOARD ═══ -->
@@ -614,7 +595,6 @@ async function loadLiveData() {
 
     if (loadedPlayers || loadedMatches) {
       // rebuild dependent UI
-      initMatchPills();
       initScoresPills();
       render();
       const stamp = new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
@@ -679,7 +659,6 @@ function copyDebug() {
    STATE
    ═══════════════════════════════════════════════ */
 let activePg = 'dashboard';
-let selMatchPlayers = [];
 let charts = {};
 
 /* ═══════════════════════════════════════════════
@@ -740,7 +719,6 @@ function render() {
   if (activePg === 'dashboard')   renderDashboard(players);
   if (activePg === 'players')     renderPlayers(players);
   if (activePg === 'scores')      renderScores();
-  if (activePg === 'matches')     renderMatches();
   if (activePg === 'leaderboard') renderLeaderboards(players);
   if (activePg === 'charts')      renderCharts(players);
 }
@@ -1007,62 +985,6 @@ function renderScoresPlayerTable(matches) {
 }
 
 /* ═══════════════════════════════════════════════
-   MATCHES PAGE
-   ═══════════════════════════════════════════════ */
-function initMatchPills() {
-  const names = [...new Set([...MATCHES.flatMap(m=>[...m.winners,...m.losers])])].sort();
-  const el = document.getElementById('match-pills');
-  el.innerHTML = `<span class="pill on" data-p="all" onclick="togglePill('all',this)">All players</span>` +
-    names.map(n=>`<span class="pill" data-p="${n}" onclick="togglePill('${n}',this)">${n}</span>`).join('');
-}
-function togglePill(name, el) {
-  if (name==='all') {
-    selMatchPlayers=[];
-    document.querySelectorAll('[data-p]').forEach(p=>p.classList.remove('on'));
-    el.classList.add('on');
-  } else {
-    const allPill = document.querySelector('[data-p="all"]');
-    if (allPill) allPill.classList.remove('on');
-    const i=selMatchPlayers.indexOf(name);
-    if(i===-1){selMatchPlayers.push(name);el.classList.add('on');}
-    else{selMatchPlayers.splice(i,1);el.classList.remove('on');}
-    if(!selMatchPlayers.length && allPill) allPill.classList.add('on');
-  }
-  renderMatches();
-}
-function renderMatches() {
-  const from = document.getElementById('dateFrom').value;
-  const to   = document.getElementById('dateTo').value;
-  const tf   = document.getElementById('typeF').value;
-  let m = MATCHES.filter(x =>
-    (tf==='all' || x.type===tf) &&
-    (!from || x.date >= from) &&
-    (!to   || x.date <= to)
-  );
-  if (selMatchPlayers.length) {
-    m = m.filter(x => selMatchPlayers.every(p=>[...x.winners,...x.losers].includes(p)));
-  }
-  const sort = document.getElementById('match-sort').value;
-  m = [...m].sort((a,b) => sort==='newest' ? b.date.localeCompare(a.date) : a.date.localeCompare(b.date));
-  document.getElementById('match-count').textContent = `${m.length} match${m.length!==1?'es':''}`;
-  const tb = document.getElementById('match-tbody');
-  if (!m.length) {
-    tb.innerHTML = MATCHES.length === 0
-      ? `<tr><td colspan="5" class="empty">No match data loaded yet. See the note in the HTML source about populating match history from the CSV exports.</td></tr>`
-      : `<tr><td colspan="5" class="empty">No matches found with current filters.</td></tr>`;
-    return;
-  }
-  tb.innerHTML = m.slice(0,300).map(x=>`
-    <tr>
-      <td style="color:var(--text3);font-family:'DM Mono',monospace;font-size:11px;white-space:nowrap">${x.date}</td>
-      <td><span class="badge ${x.type==='Singles'?'bg-blue':'bg-amber'}">${x.type[0]}</span></td>
-      <td style="color:var(--green);font-weight:500">${x.winners.join(' & ')}</td>
-      <td>${x.losers.join(' & ')}</td>
-      <td class="r"><span class="badge bg-green">${x.score||'—'}</span></td>
-    </tr>`).join('');
-}
-
-/* ═══════════════════════════════════════════════
    LEADERBOARDS
    ═══════════════════════════════════════════════ */
 function buildLb(id, data, maxVal) {
@@ -1151,7 +1073,6 @@ window.addEventListener('message',e=>{
    INIT
    ═══════════════════════════════════════════════ */
 initDates();
-initMatchPills();
 initScoresPills();
 render();
 loadLiveData();
