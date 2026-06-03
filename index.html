@@ -174,6 +174,7 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;fon
     <button class="nb" onclick="go('leaderboard',this)">Leaderboard</button>
     <button class="nb" onclick="go('charts',this)">Charts</button>
     <button class="nb" onclick="go('insights',this)">Insights</button>
+    <button class="nb" onclick="go('projections',this)">Projections</button>
     <button class="nb" onclick="go('submit',this)">Submit match</button>
   </div>
 </div>
@@ -380,6 +381,48 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;fon
       <thead><tr><th>Pairing</th><th class="r">Matches</th><th class="r">W</th><th class="r">L</th><th class="r">Win %</th><th class="r">Avg margin</th></tr></thead>
       <tbody id="i-chem-tbody"></tbody>
     </table>
+  </div>
+</div>
+
+<!-- ═══ PROJECTIONS ═══ -->
+<div id="pg-projections" class="pg">
+  <div class="slbl">What-if</div>
+  <div class="stitle">Projections</div>
+  <p style="color:var(--text2);font-size:13px;max-width:720px;margin-bottom:18px">
+    See how hypothetical results would move the needle. Pick one or more players, set a number of wins and losses to add, and the tab shows their projected win rate and ranking — without touching any real data. These what-if games only live on this tab.
+  </p>
+
+  <!-- builder -->
+  <div class="ctrl" style="margin-top:0;display:block">
+    <div style="font-size:12px;color:var(--text3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:8px">1 · Choose players <span style="text-transform:none;letter-spacing:0">(select one for a solo run, or two for a doubles team)</span></div>
+    <div class="pill-row" id="proj-pills" style="margin-bottom:14px"></div>
+    <div style="display:flex;flex-wrap:wrap;gap:14px;align-items:flex-end">
+      <div>
+        <div style="font-size:12px;color:var(--text3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:6px">2 · Add wins</div>
+        <input type="number" id="proj-wins" min="0" max="200" value="5" style="background:var(--bg3);color:var(--text);border:1px solid var(--border2);border-radius:7px;padding:7px 10px;font-size:14px;font-family:'DM Mono',monospace;width:80px;outline:none">
+      </div>
+      <div>
+        <div style="font-size:12px;color:var(--text3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:6px">…and losses</div>
+        <input type="number" id="proj-losses" min="0" max="200" value="2" style="background:var(--bg3);color:var(--text);border:1px solid var(--border2);border-radius:7px;padding:7px 10px;font-size:14px;font-family:'DM Mono',monospace;width:80px;outline:none">
+      </div>
+      <button onclick="addProjection()" style="background:var(--accent);color:#04101f;border:none;border-radius:8px;padding:9px 18px;font-size:13px;font-weight:600;font-family:'DM Sans',sans-serif;cursor:pointer">Add to projection</button>
+      <button onclick="clearProjections()" style="background:transparent;color:var(--text3);border:1px solid var(--border2);border-radius:8px;padding:9px 14px;font-size:13px;font-family:'DM Sans',sans-serif;cursor:pointer">Clear all</button>
+      <span id="proj-hint" style="font-size:12px;color:var(--text3)"></span>
+    </div>
+  </div>
+
+  <!-- active scenarios -->
+  <div id="proj-scenarios" style="margin:18px 0"></div>
+
+  <!-- comparison table -->
+  <div id="proj-table-wrap" style="margin-bottom:22px"></div>
+
+  <!-- chart 1: league context -->
+  <div class="cc" style="margin-bottom:16px">
+    <h3>Win rate — current vs projected</h3>
+    <div style="font-size:11px;color:var(--text3);margin-bottom:10px">Every player with 10+ games in the selected period (up to 15), sorted by projected win rate. Gray = current, blue = projected. A gap between a player's two bars is the movement from the what-if games — players you didn't touch show two equal bars.</div>
+    <canvas id="proj-chart" height="320"></canvas>
+    <div id="proj-chart-empty" class="empty" style="display:none">No players with 10+ games in this period yet.</div>
   </div>
 </div>
 
@@ -736,6 +779,7 @@ async function loadLiveData() {
       // rebuild dependent UI
       populateSeasons();
       initScoresPills();
+      initProjPills();
       render();
       const stamp = new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
       setDataStatus('ok', `Live · ${PLAYERS.filter(p=>p.matches>0).length} players, ${MATCHES.length} matches · updated ${stamp}`);
@@ -988,6 +1032,7 @@ function render() {
   if (activePg === 'leaderboard') renderLeaderboards(players);
   if (activePg === 'charts')      renderCharts(players);
   if (activePg === 'insights')    renderInsights();
+  if (activePg === 'projections') renderProjections();
 }
 
 /* ═══════════════════════════════════════════════
@@ -1566,9 +1611,233 @@ function renderChemistry(matches) {
 }
 
 /* ═══════════════════════════════════════════════
+   PROJECTIONS PAGE
+   What-if scenarios: add hypothetical wins/losses to
+   players and see projected win rate + ranking. These
+   dummy games only affect this tab.
+   ═══════════════════════════════════════════════ */
+let projScenarios = {};   // name -> {w, l}
+let projSelected = [];    // names currently selected in the pill row
+
+function initProjPills() {
+  const el = document.getElementById('proj-pills');
+  if (!el) return;
+  const names = PLAYERS.filter(p=>p.matches>0).map(p=>p.name).sort();
+  // keep only still-valid selections
+  projSelected = projSelected.filter(n => names.includes(n));
+  el.innerHTML = names.map(n =>
+    `<span class="pill${projSelected.includes(n)?' on':''}" data-pp="${n.replace(/"/g,'&quot;')}" onclick="toggleProjPill('${n.replace(/'/g,"\\'")}',this)">${n}</span>`
+  ).join('') || '<span style="color:var(--text3);font-size:12px">No players loaded yet.</span>';
+}
+function toggleProjPill(name, el) {
+  const i = projSelected.indexOf(name);
+  if (i===-1) { projSelected.push(name); el.classList.add('on'); }
+  else { projSelected.splice(i,1); el.classList.remove('on'); }
+}
+
+function addProjection() {
+  const w = Math.max(0, parseInt(document.getElementById('proj-wins').value)||0);
+  const l = Math.max(0, parseInt(document.getElementById('proj-losses').value)||0);
+  const hint = document.getElementById('proj-hint');
+  if (!projSelected.length) { hint.textContent = 'Pick at least one player first.'; hint.style.color='var(--amber)'; return; }
+  if (w+l === 0) { hint.textContent = 'Add at least one game.'; hint.style.color='var(--amber)'; return; }
+  hint.textContent='';
+  // each selected player gets these games added (a 2-player selection = a doubles team sharing the result)
+  projSelected.forEach(name => {
+    projScenarios[name] = projScenarios[name] || {w:0,l:0};
+    projScenarios[name].w += w;
+    projScenarios[name].l += l;
+  });
+  renderProjections();
+}
+function removeProjection(name) {
+  delete projScenarios[name];
+  renderProjections();
+}
+function clearProjections() {
+  projScenarios = {};
+  projSelected = [];
+  document.querySelectorAll('#proj-pills .pill.on').forEach(p=>p.classList.remove('on'));
+  renderProjections();
+}
+
+/* rank players by win% (min 5 total games), return name->rank map */
+function rankByWinPct(list) {
+  const eligible = list.filter(p => (p.games) >= 5)
+                       .sort((a,b) => b.winPct - a.winPct || b.wins - a.wins);
+  const map = {};
+  eligible.forEach((p,i) => map[p.name] = i+1);
+  return map;
+}
+
+function renderProjections() {
+  // refresh pills in case data loaded after first paint
+  if (!document.querySelector('#proj-pills .pill') && PLAYERS.some(p=>p.matches>0)) initProjPills();
+
+  // base stats for everyone in the current view (respects date range + type)
+  const base = playersForView().map(p => ({
+    name: p.name, wins: p.wins, losses: p.losses, games: p.matches,
+    winPct: p.matches ? p.wins/p.matches*100 : 0
+  }));
+
+  // projected league = base + dummy games applied
+  const projected = base.map(p => {
+    const s = projScenarios[p.name];
+    const w = p.wins + (s? s.w : 0);
+    const l = p.losses + (s? s.l : 0);
+    const g = w + l;
+    return { name:p.name, wins:w, losses:l, games:g, winPct: g? w/g*100 : 0 };
+  });
+
+  const curRank  = rankByWinPct(base);
+  const projRank = rankByWinPct(projected);
+
+  const names = Object.keys(projScenarios);
+
+  // ── scenario chips ──
+  const scEl = document.getElementById('proj-scenarios');
+  if (!names.length) {
+    scEl.innerHTML = '<div class="empty" style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:22px">No what-if games yet. Select players, set wins/losses, and hit “Add to projection”.</div>';
+  } else {
+    scEl.innerHTML = '<div style="display:flex;flex-wrap:wrap;gap:8px">' + names.map(n => {
+      const s = projScenarios[n];
+      return `<div style="display:flex;align-items:center;gap:8px;background:var(--bg3);border:1px solid var(--border2);border-radius:20px;padding:5px 8px 5px 13px;font-size:13px">
+        <span style="font-weight:500">${n}</span>
+        <span style="color:var(--text3);font-family:'DM Mono',monospace;font-size:12px">+${s.w}W · +${s.l}L</span>
+        <button onclick="removeProjection('${n.replace(/'/g,"\\'")}')" style="background:var(--bg2);border:1px solid var(--border2);color:var(--text2);width:20px;height:20px;border-radius:50%;font-size:12px;line-height:1;cursor:pointer">✕</button>
+      </div>`;
+    }).join('') + '</div>';
+  }
+
+  // ── comparison table ──
+  const twEl = document.getElementById('proj-table-wrap');
+  if (!names.length) {
+    twEl.innerHTML = '';
+  } else {
+    const rowsHtml = names.map(n => {
+      const b = base.find(p=>p.name===n) || {wins:0,losses:0,games:0,winPct:0};
+      const pj = projected.find(p=>p.name===n);
+      const s = projScenarios[n];
+      const dummyPct = (s.w+s.l) ? s.w/(s.w+s.l)*100 : 0;
+      const wrDelta = pj.winPct - b.winPct;
+      const cr = curRank[n], pr = projRank[n];
+      let rankCell;
+      if (!pr) rankCell = '<span style="color:var(--text3)">—</span>';
+      else if (!cr) rankCell = `<span style="color:var(--text3)">unranked</span> → <span style="color:var(--text)">#${pr}</span>`;
+      else {
+        const moved = cr - pr;
+        const arrow = moved>0 ? `<span style="color:var(--green)">▲${moved}</span>` : moved<0 ? `<span style="color:var(--red)">▼${-moved}</span>` : '<span style="color:var(--text3)">—</span>';
+        rankCell = `#${cr} → <span style="color:var(--text);font-weight:600">#${pr}</span> ${arrow}`;
+      }
+      return `<tr>
+        <td style="font-weight:500;color:var(--text)">${n}</td>
+        <td class="r" style="color:var(--text2)">${b.wins}-${b.losses}</td>
+        <td class="r"><span class="badge ${b.winPct>=60?'bg-green':b.winPct>=45?'bg-amber':'bg-red'}">${b.winPct.toFixed(1)}%</span></td>
+        <td class="r" style="color:var(--accent);font-family:'DM Mono',monospace">+${s.w}-${s.l} <span style="color:var(--text3)">(${dummyPct.toFixed(0)}%)</span></td>
+        <td class="r" style="color:var(--text)">${pj.wins}-${pj.losses}</td>
+        <td class="r"><span class="badge ${pj.winPct>=60?'bg-green':pj.winPct>=45?'bg-amber':'bg-red'}">${pj.winPct.toFixed(1)}%</span></td>
+        <td class="r" style="color:${wrDelta>=0?'var(--green)':'var(--red)'};font-family:'DM Mono',monospace">${wrDelta>=0?'+':''}${wrDelta.toFixed(1)}</td>
+        <td class="r" style="font-family:'DM Mono',monospace;white-space:nowrap">${rankCell}</td>
+      </tr>`;
+    }).join('');
+    twEl.innerHTML = `
+      <div class="slbl" style="margin-bottom:6px">Projection summary <span style="text-transform:none;letter-spacing:0;color:var(--text3)">· rank is by win % among players with 5+ games</span></div>
+      <div class="tw" style="margin:0"><table class="mt">
+        <thead><tr>
+          <th>Player</th>
+          <th class="r">Current</th><th class="r">Win %</th>
+          <th class="r">What-if</th>
+          <th class="r">Projected</th><th class="r">Win %</th>
+          <th class="r">Δ Win %</th>
+          <th class="r">Rank move</th>
+        </tr></thead>
+        <tbody>${rowsHtml}</tbody>
+      </table></div>`;
+  }
+
+  // ── CHART 1: league context — current vs projected ──
+  const canvas = document.getElementById('proj-chart');
+  const emptyEl = document.getElementById('proj-chart-empty');
+  dc('proj-chart');
+
+  const scenarioSet = new Set(names);
+  // qualifying = players with 10+ games in the period, plus any scenario player
+  const qualifyNames = new Set(base.filter(p => p.games > 10).map(p => p.name));
+  scenarioSet.forEach(n => qualifyNames.add(n));
+
+  let chartPlayers = projected.filter(p => qualifyNames.has(p.name))
+                              .sort((a,b) => b.winPct - a.winPct || b.wins - a.wins);
+  // cap at 15, but never drop a scenario player
+  if (chartPlayers.length > 15) {
+    const scen = chartPlayers.filter(p => scenarioSet.has(p.name));
+    const rest = chartPlayers.filter(p => !scenarioSet.has(p.name)).slice(0, Math.max(0, 15 - scen.length));
+    chartPlayers = [...scen, ...rest].sort((a,b) => b.winPct - a.winPct || b.wins - a.wins);
+  }
+
+  if (!chartPlayers.length) {
+    canvas.style.display='none'; emptyEl.style.display='block';
+  } else {
+    canvas.style.display='block'; emptyEl.style.display='none';
+    const labels  = chartPlayers.map(p => p.name);
+    const curData = labels.map(n => { const b=base.find(p=>p.name===n); return b? +b.winPct.toFixed(1) : 0; });
+    const prjData = labels.map(n => { const pj=projected.find(p=>p.name===n); return pj? +pj.winPct.toFixed(1) : 0; });
+
+    // label the projected bar for everyone, and the current bar only for scenario players (shows their before→after)
+    const labelPlugin = {
+      id: 'projLabels',
+      afterDatasetsDraw(chart) {
+        const {ctx} = chart;
+        ctx.save();
+        ctx.font = "600 9px 'DM Mono', monospace";
+        ctx.textAlign = 'center';
+        chart.data.datasets.forEach((ds, di) => {
+          const meta = chart.getDatasetMeta(di);
+          meta.data.forEach((bar, i) => {
+            const isScen = scenarioSet.has(labels[i]);
+            if (di === 0 && !isScen) return;          // current bar: only for scenario players
+            const v = ds.data[i];
+            if (v === null || v === undefined) return;
+            ctx.fillStyle = di === 1 ? (isScen ? '#58a6ff' : '#6e7681') : '#8b949e';
+            ctx.fillText(v + '%', bar.x, bar.y - 4);
+          });
+        });
+        ctx.restore();
+      }
+    };
+
+    charts['proj-chart'] = new Chart(canvas, {
+      type:'bar',
+      data:{
+        labels,
+        datasets:[
+          { label:'Current',   data:curData, backgroundColor:'rgba(139,148,158,.5)', borderColor:'#8b949e', borderWidth:1, borderRadius:4 },
+          { label:'Projected', data:prjData,
+            backgroundColor: labels.map(n => scenarioSet.has(n) ? 'rgba(88,166,255,.85)' : 'rgba(139,148,158,.5)'),
+            borderColor:     labels.map(n => scenarioSet.has(n) ? '#58a6ff' : '#8b949e'),
+            borderWidth:1, borderRadius:4 },
+        ]
+      },
+      options:{
+        responsive:true,
+        layout:{ padding:{ top:18 } },
+        plugins:{
+          legend:{ display:true, position:'bottom', labels:{ color:'#8b949e', font:{size:11}, boxWidth:12, padding:12, usePointStyle:true } },
+          tooltip:{ callbacks:{ label: c => `${c.dataset.label}: ${c.parsed.y}%` } }
+        },
+        scales:{
+          x:{ ticks:{color:'#6e7681',font:{size:10}}, grid:{display:false} },
+          y:{ min:0, max:100, ticks:{color:'#6e7681',font:{size:10},callback:v=>v+'%'}, grid:{color:'rgba(255,255,255,.04)'} }
+        }
+      },
+      plugins:[labelPlugin]
+    });
+  }
+}
+
+/* ═══════════════════════════════════════════════
    PLAYER PROFILE MODAL
-   Career view for one player, computed from MATCHES
-   (not date-filtered — this is their full record).
+   Career view for one player, computed from MATCHES.
+   Honors the active date range + match type.
    ═══════════════════════════════════════════════ */
 function openProfile(name) {
   const pdata = PLAYERS.find(p => p.name === name) || {name, last:'', matches:0, wins:0, losses:0, ptsFor:0, ptsAgainst:0, winPct:0, ptsDiff:0, rating:null, rank:null};
@@ -1815,6 +2084,7 @@ window.addEventListener('message',e=>{
    ═══════════════════════════════════════════════ */
 initDates();
 initScoresPills();
+initProjPills();
 render();
 loadLiveData();
 </script>
