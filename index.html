@@ -190,10 +190,13 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;fon
 
 <!-- CONTROLS (hidden on submit) -->
 <div id="ctrl-bar" class="ctrl" style="margin-top:22px">
+  <label>Season</label>
+  <select id="seasonSel" onchange="applySeason(this.value)"></select>
+  <div class="cdiv"></div>
   <label>From</label>
-  <input type="date" id="dateFrom" onchange="render()">
+  <input type="date" id="dateFrom" onchange="onManualDate()">
   <label>To</label>
-  <input type="date" id="dateTo" onchange="render()">
+  <input type="date" id="dateTo" onchange="onManualDate()">
   <div class="cdiv"></div>
   <label>Range</label>
   <select id="qr" onchange="applyQR(this.value)">
@@ -733,6 +736,7 @@ async function loadLiveData() {
 
     if (loadedPlayers || loadedMatches) {
       // rebuild dependent UI
+      populateSeasons();
       initScoresPills();
       render();
       const stamp = new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
@@ -804,15 +808,97 @@ let charts = {};
    ═══════════════════════════════════════════════ */
 const isoToday = () => new Date().toISOString().slice(0,10);
 const isoDaysAgo = n => { const d=new Date(); d.setDate(d.getDate()-n); return d.toISOString().slice(0,10); };
+
+/* ── SEASON LOGIC ──
+   Each season ends ON the first Saturday of September.
+   The next season starts the following day (Sunday).
+   A season is identified by its END year, e.g. the '25–'26
+   season ends on the first Saturday of Sept 2026. */
+function firstSaturdayOfSept(year) {
+  const d = new Date(year, 8, 1);                 // Sept 1
+  const offset = (6 - d.getDay() + 7) % 7;        // days until Saturday
+  d.setDate(1 + offset);
+  return d;
+}
+function isoOf(d) {
+  const y=d.getFullYear(), m=String(d.getMonth()+1).padStart(2,'0'), da=String(d.getDate()).padStart(2,'0');
+  return `${y}-${m}-${da}`;
+}
+function seasonEndYearFor(date) {
+  const y = date.getFullYear();
+  return date > firstSaturdayOfSept(y) ? y+1 : y;
+}
+function currentSeasonEndYear() { return seasonEndYearFor(new Date()); }
+function seasonBounds(endYear) {
+  const startBase = firstSaturdayOfSept(endYear-1);
+  const start = new Date(startBase); start.setDate(start.getDate()+1); // day after = Sunday
+  return { start: isoOf(start), end: isoOf(firstSaturdayOfSept(endYear)) };
+}
+function seasonLabel(endYear) {
+  const a = String((endYear-1)%100).padStart(2,'0');
+  const b = String(endYear%100).padStart(2,'0');
+  return `'${a}–'${b}`;
+}
+function currentSeasonStartISO() { return seasonBounds(currentSeasonEndYear()).start; }
+
+/* Whether the active window should use the sheet's career aggregate
+   (current season / all-time, type=all) vs. recomputing from matches. */
+function isAggregateWindow(from, to, tf) {
+  if (tf && tf !== 'all') return false;
+  const cs = currentSeasonStartISO();
+  return (!from || from <= cs) && (!to || to >= isoToday());
+}
+
+function populateSeasons() {
+  const sel = document.getElementById('seasonSel');
+  if (!sel) return;
+  const prev = sel.value;
+  const cur = currentSeasonEndYear();
+  let earliest = cur;
+  MATCHES.forEach(m => { if (m.date) { const ey = seasonEndYearFor(new Date(m.date+'T12:00:00')); if (ey < earliest) earliest = ey; } });
+  let html = '';
+  for (let y = cur; y >= earliest; y--) html += `<option value="${y}">${seasonLabel(y)}${y===cur?' (current)':''}</option>`;
+  if (earliest < cur) html += `<option value="all">All time</option>`;
+  sel.innerHTML = html;
+  // keep prior selection if still valid, else default to current season
+  sel.value = (prev && [...sel.options].some(o=>o.value===prev)) ? prev : String(cur);
+}
+
+/* Set the date window from the chosen season (without re-render; caller renders) */
+function setSeasonDates(val) {
+  if (val === 'all') {
+    document.getElementById('dateFrom').value = '2020-01-01';
+    document.getElementById('dateTo').value = isoToday();
+  } else {
+    const b = seasonBounds(+val);
+    document.getElementById('dateFrom').value = b.start;
+    document.getElementById('dateTo').value = b.end;
+  }
+}
+function applySeason(val) { setSeasonDates(val); render(); }
+
+/* Manual date / quick-range edits clear the season dropdown to a neutral state */
+function onManualDate() {
+  const sel = document.getElementById('seasonSel');
+  if (sel && !sel.querySelector('option[value="custom"]')) {
+    sel.insertAdjacentHTML('beforeend', '<option value="custom">Custom range</option>');
+  }
+  if (sel) sel.value = 'custom';
+  render();
+}
+
 function applyQR(v) {
   const to = isoToday();
   document.getElementById('dateFrom').value = v==='today' ? to : v==='all' ? '2020-01-01' : isoDaysAgo(+v);
   document.getElementById('dateTo').value = to;
-  render();
+  onManualDate();
 }
 function initDates() {
-  document.getElementById('dateFrom').value = '2020-01-01';
-  document.getElementById('dateTo').value = isoToday();
+  populateSeasons();
+  // Default to the current season (also the Dashboard's default view).
+  const cur = String(currentSeasonEndYear());
+  document.getElementById('seasonSel').value = cur;
+  setSeasonDates(cur);
 }
 
 /* ═══════════════════════════════════════════════
@@ -845,8 +931,7 @@ function playersForView() {
   const from = document.getElementById('dateFrom').value;
   const to   = document.getElementById('dateTo').value;
   const tf   = document.getElementById('typeF').value;
-  const isFullRange = (!from || from <= '2020-01-01') && (!to || to >= isoToday());
-  if (isFullRange && tf === 'all') return PLAYERS;       // career aggregate from sheet
+  if (isAggregateWindow(from, to, tf)) return PLAYERS;    // current-season / all-time aggregate from sheet
 
   // Recompute from the match log within the active filters.
   const ms = MATCHES.filter(m =>
@@ -938,17 +1023,21 @@ function co(yFn) {
    DASHBOARD
    ═══════════════════════════════════════════════ */
 function renderDashboard(players) {
-  const active = players.filter(p => p.matches > 0).sort((a,b) => b.winPct - a.winPct);
-  const top = active.slice(0, 10);
+  // Dashboard cards: only players with 10+ matches in the selected season,
+  // and each card shows up to the top 15 by its own metric.
+  const qualified = players.filter(p => p.matches >= 10);
 
+  // Win rate (top 15 by win %)
+  const byWR = [...qualified].sort((a,b)=>b.winPct-a.winPct).slice(0,15);
   dc('d-wr');
   charts['d-wr'] = new Chart(document.getElementById('d-wr'), {
     type:'bar',
-    data:{labels:top.map(p=>p.name), datasets:[{data:top.map(p=>p.winPct.toFixed(1)), backgroundColor:top.map((_,i)=>CC[i%CC.length]), borderRadius:4}]},
+    data:{labels:byWR.map(p=>p.name), datasets:[{data:byWR.map(p=>p.winPct.toFixed(1)), backgroundColor:byWR.map((_,i)=>CC[i%CC.length]), borderRadius:4}]},
     options:{...co(v=>v+'%'), scales:{...co().scales, y:{...co().scales.y, max:100, ticks:{color:'#6e7681',font:{size:10},callback:v=>v+'%'}}}}
   });
 
-  const rated = players.filter(p=>p.rating!==null).sort((a,b)=>b.rating-a.rating);
+  // Rating (top 15 by rating; rating only exists on the full-season aggregate)
+  const rated = qualified.filter(p=>p.rating!==null).sort((a,b)=>b.rating-a.rating).slice(0,15);
   dc('d-rat');
   charts['d-rat'] = new Chart(document.getElementById('d-rat'), {
     type:'bar',
@@ -956,25 +1045,29 @@ function renderDashboard(players) {
     options:co()
   });
 
+  // Matches played (top 15 by matches)
+  const byMP = [...qualified].sort((a,b)=>b.matches-a.matches).slice(0,15);
   dc('d-mp');
   charts['d-mp'] = new Chart(document.getElementById('d-mp'), {
     type:'bar',
-    data:{labels:active.map(p=>p.name), datasets:[{data:active.map(p=>p.matches), backgroundColor:active.map((_,i)=>CC[i%CC.length]), borderRadius:4}]},
+    data:{labels:byMP.map(p=>p.name), datasets:[{data:byMP.map(p=>p.matches), backgroundColor:byMP.map((_,i)=>CC[i%CC.length]), borderRadius:4}]},
     options:co()
   });
 
+  // Points for vs against (top 15 by points for)
+  const byPts = [...qualified].sort((a,b)=>b.ptsFor-a.ptsFor).slice(0,15);
   dc('d-pts');
   charts['d-pts'] = new Chart(document.getElementById('d-pts'), {
     type:'bar',
-    data:{labels:active.map(p=>p.name), datasets:[
-      {label:'For',   data:active.map(p=>p.ptsFor),     backgroundColor:'rgba(88,166,255,.7)', borderRadius:4},
-      {label:'Against',data:active.map(p=>p.ptsAgainst),backgroundColor:'rgba(248,81,73,.5)',  borderRadius:4}
+    data:{labels:byPts.map(p=>p.name), datasets:[
+      {label:'For',   data:byPts.map(p=>p.ptsFor),     backgroundColor:'rgba(88,166,255,.7)', borderRadius:4},
+      {label:'Against',data:byPts.map(p=>p.ptsAgainst),backgroundColor:'rgba(248,81,73,.5)',  borderRadius:4}
     ]},
     options:{...co(), plugins:{legend:{display:true,labels:{color:'#8b949e',font:{size:10}}}}}
   });
 
-  buildLb('d-lb', active.slice(0,8).map(p=>({name:p.name,value:p.winPct,display:p.winPct.toFixed(1)+'%'})), 100);
-  buildLb('d-rat-lb', rated.slice(0,8).map(p=>({name:p.name,value:p.rating,display:p.rating.toFixed(3)})), Math.max(...rated.map(p=>Math.abs(p.rating))));
+  buildLb('d-lb', byWR.map(p=>({name:p.name,value:p.winPct,display:p.winPct.toFixed(1)+'%'})), 100, 15);
+  buildLb('d-rat-lb', rated.map(p=>({name:p.name,value:p.rating,display:p.rating.toFixed(3)})), rated.length?Math.max(...rated.map(p=>Math.abs(p.rating))):1, 15);
 }
 
 /* ═══════════════════════════════════════════════
@@ -1171,11 +1264,11 @@ function renderScoresPlayerTable(matches) {
 /* ═══════════════════════════════════════════════
    LEADERBOARDS
    ═══════════════════════════════════════════════ */
-function buildLb(id, data, maxVal) {
+function buildLb(id, data, maxVal, limit) {
   const el = document.getElementById(id);
   if (!el || !data.length) { if(el) el.innerHTML='<div class="empty">No data</div>'; return; }
   const mx = maxVal || Math.max(...data.map(d=>Math.abs(d.value)));
-  el.innerHTML = data.slice(0,8).map((item,i)=>{
+  el.innerHTML = data.slice(0, limit||8).map((item,i)=>{
     const rc = i===0?'g1':i===1?'g2':i===2?'g3':'';
     const rs = i===0?'🥇':i===1?'🥈':i===2?'🥉':i+1;
     const pct = mx ? Math.round(Math.abs(item.value)/mx*100) : 50;
@@ -1189,15 +1282,15 @@ function buildLb(id, data, maxVal) {
 }
 
 function renderLeaderboards(players) {
-  const active = players.filter(p=>p.matches>0);
+  const active = players.filter(p=>p.matches>=5);   // only players with 5+ games
   const rated  = active.filter(p=>p.rating!==null);
 
-  buildLb('lb-wr',     active.sort((a,b)=>b.winPct-a.winPct).map(p=>({name:p.name,value:p.winPct,display:p.winPct.toFixed(1)+'%'})), 100);
-  buildLb('lb-rat',    [...rated].sort((a,b)=>b.rating-a.rating).map(p=>({name:p.name,value:p.rating,display:p.rating.toFixed(3)})));
-  buildLb('lb-wins',   [...active].sort((a,b)=>b.wins-a.wins).map(p=>({name:p.name,value:p.wins,display:p.wins+' wins'})));
-  buildLb('lb-played', [...active].sort((a,b)=>b.matches-a.matches).map(p=>({name:p.name,value:p.matches,display:p.matches+' played'})));
-  buildLb('lb-diff',   [...active].sort((a,b)=>b.ptsDiff-a.ptsDiff).map(p=>({name:p.name,value:p.ptsDiff,display:(p.ptsDiff>0?'+':'')+p.ptsDiff})));
-  buildLb('lb-pts',    [...active].sort((a,b)=>b.ptsFor-a.ptsFor).map(p=>({name:p.name,value:p.ptsFor,display:p.ptsFor.toLocaleString()})));
+  buildLb('lb-wr',     active.sort((a,b)=>b.winPct-a.winPct).map(p=>({name:p.name,value:p.winPct,display:p.winPct.toFixed(1)+'%'})), 100, 15);
+  buildLb('lb-rat',    [...rated].sort((a,b)=>b.rating-a.rating).map(p=>({name:p.name,value:p.rating,display:p.rating.toFixed(3)})), null, 15);
+  buildLb('lb-wins',   [...active].sort((a,b)=>b.wins-a.wins).map(p=>({name:p.name,value:p.wins,display:p.wins+' wins'})), null, 15);
+  buildLb('lb-played', [...active].sort((a,b)=>b.matches-a.matches).map(p=>({name:p.name,value:p.matches,display:p.matches+' played'})), null, 15);
+  buildLb('lb-diff',   [...active].sort((a,b)=>b.ptsDiff-a.ptsDiff).map(p=>({name:p.name,value:p.ptsDiff,display:(p.ptsDiff>0?'+':'')+p.ptsDiff})), null, 15);
+  buildLb('lb-pts',    [...active].sort((a,b)=>b.ptsFor-a.ptsFor).map(p=>({name:p.name,value:p.ptsFor,display:p.ptsFor.toLocaleString()})), null, 15);
 }
 
 /* ═══════════════════════════════════════════════
@@ -1497,7 +1590,7 @@ function openProfile(name) {
   const from = document.getElementById('dateFrom').value;
   const to   = document.getElementById('dateTo').value;
   const tf   = document.getElementById('typeF').value;
-  const isFullRange = (!from || from <= '2020-01-01') && (!to || to >= isoToday()) && tf === 'all';
+  const isFullRange = isAggregateWindow(from, to, tf);
 
   // this player's matches within the active filters, chronological
   const mine = MATCHES.filter(m =>
