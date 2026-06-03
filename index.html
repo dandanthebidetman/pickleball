@@ -244,13 +244,11 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;fon
   <div class="sg" id="dash-cards"></div>
   <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(270px,1fr));gap:14px;margin-bottom:24px">
     <div class="cc"><h3>Win rate by player</h3><canvas id="d-wr" height="210"></canvas></div>
-    <div class="cc"><h3>Cumulative rating</h3><canvas id="d-rat" height="210"></canvas></div>
     <div class="cc"><h3>Matches played</h3><canvas id="d-mp" height="210"></canvas></div>
     <div class="cc"><h3>Points for vs against</h3><canvas id="d-pts" height="210"></canvas></div>
   </div>
   <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px">
     <div><div class="slbl" style="margin-bottom:5px">Overall leaderboard</div><div class="lb" id="d-lb"></div></div>
-    <div><div class="slbl" style="margin-bottom:5px">Rating rankings (10+ matches)</div><div class="lb" id="d-rat-lb"></div></div>
   </div>
 </div>
 
@@ -1036,15 +1034,6 @@ function renderDashboard(players) {
     options:{...co(v=>v+'%'), scales:{...co().scales, y:{...co().scales.y, max:100, ticks:{color:'#6e7681',font:{size:10},callback:v=>v+'%'}}}}
   });
 
-  // Rating (top 15 by rating; rating only exists on the full-season aggregate)
-  const rated = qualified.filter(p=>p.rating!==null).sort((a,b)=>b.rating-a.rating).slice(0,15);
-  dc('d-rat');
-  charts['d-rat'] = new Chart(document.getElementById('d-rat'), {
-    type:'bar',
-    data:{labels:rated.map(p=>p.name), datasets:[{data:rated.map(p=>p.rating), backgroundColor:rated.map(p=>p.rating>=0?'rgba(63,185,80,.75)':'rgba(248,81,73,.65)'), borderRadius:4}]},
-    options:co()
-  });
-
   // Matches played (top 15 by matches)
   const byMP = [...qualified].sort((a,b)=>b.matches-a.matches).slice(0,15);
   dc('d-mp');
@@ -1067,7 +1056,6 @@ function renderDashboard(players) {
   });
 
   buildLb('d-lb', byWR.map(p=>({name:p.name,value:p.winPct,display:p.winPct.toFixed(1)+'%'})), 100, 15);
-  buildLb('d-rat-lb', rated.map(p=>({name:p.name,value:p.rating,display:p.rating.toFixed(3)})), rated.length?Math.max(...rated.map(p=>Math.abs(p.rating))):1, 15);
 }
 
 /* ═══════════════════════════════════════════════
