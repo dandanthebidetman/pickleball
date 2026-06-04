@@ -469,16 +469,26 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;fon
       <span>1 · Who's playing</span>
       <button onclick="recSelectAll()" class="mm-btn" style="text-transform:none;letter-spacing:0">Select all</button>
       <button onclick="recClearAll()" class="mm-btn" style="text-transform:none;letter-spacing:0">Clear</button>
+      <button onclick="toggleAddPlayer()" class="mm-btn" style="text-transform:none;letter-spacing:0;border-color:var(--accent);color:var(--accent)">+ Add player</button>
       <span style="text-transform:none;letter-spacing:0;display:inline-flex;align-items:center;gap:6px">
         <span style="color:var(--text3)">Show players with</span>
         <select id="rec-gp-filter" onchange="onRecGpFilterChange()" class="mm-sel" style="padding:4px 8px;font-size:12px;text-transform:none;letter-spacing:0">
           <option value="0">0+ games</option>
           <option value="5">5+ games</option>
-          <option value="10">10+ games</option>
+          <option value="10" selected>10+ games</option>
         </select>
         <span style="color:var(--text3)">this season</span>
       </span>
       <span id="rec-count" style="text-transform:none;letter-spacing:0;color:var(--text3)"></span>
+    </div>
+    <div id="add-player-form" style="display:none;margin:0 0 12px;padding:11px 13px;background:var(--bg3);border:1px solid var(--border);border-radius:8px">
+      <div style="font-size:12px;color:var(--text3);margin-bottom:7px">Add a returning player to the roster — this saves them to the sheet permanently. (For a one-time visitor, use the Guests fields below instead.)</div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center">
+        <input type="text" id="add-player-name" placeholder="Player name" class="mm-sel" style="padding:6px 10px" onkeydown="if(event.key==='Enter')submitAddPlayer()">
+        <button onclick="submitAddPlayer()" class="mm-btn" style="border-color:var(--green);color:var(--green)">Add to roster</button>
+        <button onclick="toggleAddPlayer(false)" class="mm-btn">Cancel</button>
+        <span id="add-player-status" style="font-size:12px;color:var(--text3)"></span>
+      </div>
     </div>
     <div class="pill-row" id="rec-pills" style="margin-bottom:12px"></div>
     <div style="font-size:12px;color:var(--text3);margin-bottom:6px">Guests (type a name to include)</div>
@@ -2035,6 +2045,52 @@ function recClearAll() {
   recSelected = [];
   document.querySelectorAll('#rec-pills .pill').forEach(p=>p.classList.remove('on'));
   renderRecCount();
+}
+
+/* —— Add a returning player to the roster (writes to the sheet's first tab) —— */
+function toggleAddPlayer(show) {
+  const f = document.getElementById('add-player-form');
+  if (!f) return;
+  const willShow = (show === undefined) ? (f.style.display === 'none') : show;
+  f.style.display = willShow ? 'block' : 'none';
+  if (willShow) {
+    const i = document.getElementById('add-player-name');
+    if (i) { i.value = ''; i.focus(); }
+    const s = document.getElementById('add-player-status');
+    if (s) s.textContent = '';
+  }
+}
+function submitAddPlayer() {
+  const input  = document.getElementById('add-player-name');
+  const status = document.getElementById('add-player-status');
+  const setSt = (m,c) => { if (status) { status.textContent = m; status.style.color = c || 'var(--text3)'; } };
+  const name = (input?.value || '').trim();
+  if (!name) { setSt('Enter a name first.', 'var(--amber)'); return; }
+  if (PLAYERS.some(p => p.name.toLowerCase() === name.toLowerCase())) {
+    setSt(`"${name}" is already on the roster.`, 'var(--amber)'); return;
+  }
+  if (!SUBMIT_ENDPOINT) { setSt('Saving is not set up yet.', 'var(--red)'); return; }
+
+  setSt('Adding…', 'var(--text3)');
+  fetch(SUBMIT_ENDPOINT, {
+    method: 'POST',
+    mode: 'no-cors',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify({ action: 'addPlayer', name: name, secret: SUBMIT_SECRET })
+  }).then(() => {
+    // new players have 0 games, so drop the games filter to 0+ so they show up
+    const gf = document.getElementById('rec-gp-filter'); if (gf) gf.value = '0';
+    setSt(`Added ${name} ✓ — refreshing roster…`, 'var(--green)');
+    setTimeout(() => {
+      loadLiveData().then(() => {
+        onRecGpFilterChange();                 // rebuild pills under the 0+ filter
+        setSt(`${name} is now on the roster (showing 0+ games).`, 'var(--green)');
+        const i = document.getElementById('add-player-name'); if (i) i.value = '';
+      });
+    }, 3500);
+  }).catch(() => {
+    setSt('Could not reach the sheet — try again.', 'var(--red)');
+  });
 }
 function recGuests() {
   return [0,1,2,3].map(i => (document.getElementById('rec-guest-'+i)?.value||'').trim()).filter(Boolean);
