@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>'25-'26 Pickleball Tracker</title>
+<title>Pickleball Tracker</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Playfair+Display:wght@700;900&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
@@ -61,6 +61,8 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;fon
 .badge{display:inline-block;font-family:'DM Mono',monospace;font-size:11px;padding:2px 7px;border-radius:4px;font-weight:500}
 .bg-green{background:rgba(63,185,80,.15);color:var(--green)}.bg-red{background:rgba(248,81,73,.15);color:var(--red)}
 .bg-blue{background:rgba(88,166,255,.15);color:var(--accent)}.bg-amber{background:rgba(210,153,34,.15);color:var(--amber)}
+.bg-classic{background:rgba(63,185,80,.15);color:var(--green);font-weight:600}
+.mm-match.is-classic{border-color:rgba(63,185,80,.45);box-shadow:inset 3px 0 0 var(--green)}
 /* LEADERBOARD */
 .lbg{display:grid;grid-template-columns:repeat(auto-fit,minmax(270px,1fr));gap:14px;margin-bottom:24px}
 .lb{background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden}
@@ -77,10 +79,6 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;fon
 .cgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(270px,1fr));gap:13px;margin-bottom:24px}
 .cc{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:17px}
 .cc h3{font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:13px}
-/* FORM */
-.fw{max-width:820px;margin:0 auto}
-.fcard{background:var(--card);border:1px solid var(--border);border-radius:16px;overflow:hidden}
-.jfi{width:100%;height:100vh;min-height:820px;border:none;display:block}
 /* MISC */
 .empty{text-align:center;padding:32px;color:var(--text3);font-size:13px}
 .pill-row{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
@@ -161,12 +159,36 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;fon
   .sg{grid-template-columns:1fr 1fr}
   .mp-stats{grid-template-columns:1fr 1fr}
 }
+/* MATCHMAKER */
+.mm-round{margin-bottom:18px}
+.mm-round-h{font-family:'DM Mono',monospace;font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text3);margin-bottom:8px;display:flex;align-items:center;gap:8px}
+.mm-round-h::after{content:'';flex:1;height:1px;background:var(--border)}
+.mm-match{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:13px 15px;margin-bottom:9px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.mm-court{font-family:'DM Mono',monospace;font-size:11px;color:var(--text3);min-width:60px}
+.mm-teams{flex:1;display:flex;align-items:center;gap:10px;flex-wrap:wrap;font-size:14px;min-width:200px}
+.mm-team{font-weight:500;color:var(--text)}
+.mm-vs{color:var(--text3);font-size:12px;font-family:'DM Mono',monospace}
+.mm-actions{display:flex;gap:6px}
+.mm-btn{background:var(--bg3);border:1px solid var(--border2);color:var(--text2);border-radius:7px;padding:4px 10px;font-size:12px;font-family:'DM Sans',sans-serif;cursor:pointer}
+.mm-btn:hover{color:var(--text);border-color:var(--accent)}
+.mm-btn.del:hover{color:var(--red);border-color:var(--red)}
+.mm-sel{background:var(--bg3);color:var(--text);border:1px solid var(--border2);border-radius:6px;padding:4px 7px;font-size:13px;font-family:'DM Sans',sans-serif;outline:none}
+.mm-count{display:inline-flex;align-items:center;gap:5px;background:var(--bg2);border:1px solid var(--border);border-radius:16px;padding:3px 10px;font-size:12px;margin:0 5px 6px 0}
+.mm-count b{font-family:'DM Mono',monospace;color:var(--accent)}
+.mm-score{display:flex;align-items:center;gap:6px}
+.mm-scin{width:48px;background:var(--bg3);color:var(--text);border:1px solid var(--border2);border-radius:6px;padding:5px 6px;font-size:14px;font-family:'DM Mono',monospace;text-align:center;outline:none}
+.mm-scin:focus{border-color:var(--accent)}
+.mm-st{font-size:11px;font-family:'DM Mono',monospace;min-width:60px}
+@media (max-width:760px){
+  .mm-match{flex-direction:column;align-items:stretch;gap:8px}
+  .mm-actions{justify-content:flex-end;flex-wrap:wrap}
+}
 </style>
 </head>
 <body>
 
 <div class="top-bar">
-  <div class="logo">Pickle<span>Ball</span> '25–'26</div>
+  <div class="logo">Pickle<span>Ball</span> Tracker</div>
   <div class="nav">
     <button class="nb on" onclick="go('dashboard',this)">Dashboard</button>
     <button class="nb" onclick="go('players',this)">Players</button>
@@ -175,7 +197,7 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;fon
     <button class="nb" onclick="go('charts',this)">Charts</button>
     <button class="nb" onclick="go('insights',this)">Insights</button>
     <button class="nb" onclick="go('projections',this)">Projections</button>
-    <button class="nb" onclick="go('submit',this)">Submit match</button>
+    <button class="nb" onclick="go('matchmaker',this)">Matchmaker</button>
   </div>
 </div>
 
@@ -189,7 +211,7 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;fon
 
 <div class="w">
 
-<!-- CONTROLS (hidden on submit) -->
+<!-- CONTROLS (hidden on matchmaker) -->
 <div id="ctrl-bar" class="ctrl" style="margin-top:22px">
   <label>Season</label>
   <select id="seasonSel" onchange="applySeason(this.value)"></select>
@@ -241,7 +263,7 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;fon
 <!-- ═══ DASHBOARD ═══ -->
 <div id="pg-dashboard" class="pg on">
   <div class="slbl">Overview</div>
-  <div class="stitle">'25–'26 Season at a glance</div>
+  <div class="stitle">Season at a glance</div>
   <div class="sg" id="dash-cards"></div>
   <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(270px,1fr));gap:14px;margin-bottom:24px">
     <div class="cc"><h3>Win rate by player</h3><canvas id="d-wr" height="210"></canvas></div>
@@ -306,7 +328,6 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;fon
   <div class="stitle">Leaderboards</div>
   <div class="lbg">
     <div><div class="slbl" style="margin-bottom:5px">Overall win rate</div><div class="lb" id="lb-wr"></div></div>
-    <div><div class="slbl" style="margin-bottom:5px">Cumulative rating (10+ matches)</div><div class="lb" id="lb-rat"></div></div>
     <div><div class="slbl" style="margin-bottom:5px">Total wins</div><div class="lb" id="lb-wins"></div></div>
     <div><div class="slbl" style="margin-bottom:5px">Most matches played</div><div class="lb" id="lb-played"></div></div>
     <div><div class="slbl" style="margin-bottom:5px">Point differential</div><div class="lb" id="lb-diff"></div></div>
@@ -324,7 +345,6 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;fon
     <div class="cc"><h3>Wins vs losses</h3><canvas id="c-wl" height="240"></canvas></div>
     <div class="cc"><h3>Point differential</h3><canvas id="c-diff" height="240"></canvas></div>
     <div class="cc"><h3>Points for vs against</h3><canvas id="c-pts" height="240"></canvas></div>
-    <div class="cc"><h3>Cumulative rating</h3><canvas id="c-rat" height="240"></canvas></div>
   </div>
 </div>
 
@@ -426,24 +446,66 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;fon
   </div>
 </div>
 
-<!-- ═══ SUBMIT ═══ -->
-<div id="pg-submit" class="pg">
-  <div class="slbl">New result</div>
-  <div class="stitle">Submit a match</div>
-  <div class="fw">
-    <div class="fcard">
-      <iframe id="jfi" class="jfi" src="https://form.jotform.com/260105229409047"
-        title="Submit match result" scrolling="yes" allowfullscreen></iframe>
+<!-- ═══ MATCHMAKER ═══ -->
+<div id="pg-matchmaker" class="pg">
+  <div class="slbl">Session planner</div>
+  <div class="stitle">Matchmaker</div>
+  <p style="color:var(--text2);font-size:13px;max-width:740px;margin-bottom:18px">
+    Pick who's here, set your courts and how many matches you want, and this builds a schedule that keeps play time fair, mixes up partners and opponents so games stay fresh, and keeps as many people on court as possible (using singles to fill gaps when needed). Tweak or delete any match after.
+  </p>
+
+  <div class="ctrl" style="margin-top:0;display:block">
+    <div style="font-size:12px;color:var(--text3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:8px;display:flex;gap:10px;align-items:center">
+      <span>1 · Who's playing</span>
+      <button onclick="recSelectAll()" class="mm-btn" style="text-transform:none;letter-spacing:0">Select all</button>
+      <button onclick="recClearAll()" class="mm-btn" style="text-transform:none;letter-spacing:0">Clear</button>
+      <span id="rec-count" style="text-transform:none;letter-spacing:0;color:var(--text3)"></span>
     </div>
-    <p style="text-align:center;font-size:12px;color:var(--text3);margin-top:10px">
-      After submitting, the spreadsheet owner will update the tracker. Data on this page reflects the most recent snapshot.
-    </p>
+    <div class="pill-row" id="rec-pills" style="margin-bottom:12px"></div>
+    <div style="font-size:12px;color:var(--text3);margin-bottom:6px">Guests (type a name to include)</div>
+    <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:4px">
+      <input type="text" id="rec-guest-0" placeholder="Guest 1" oninput="renderRecCount()" class="mm-sel" style="padding:6px 10px">
+      <input type="text" id="rec-guest-1" placeholder="Guest 2" oninput="renderRecCount()" class="mm-sel" style="padding:6px 10px">
+      <input type="text" id="rec-guest-2" placeholder="Guest 3" oninput="renderRecCount()" class="mm-sel" style="padding:6px 10px">
+      <input type="text" id="rec-guest-3" placeholder="Guest 4" oninput="renderRecCount()" class="mm-sel" style="padding:6px 10px">
+    </div>
   </div>
+
+  <div class="ctrl" style="display:flex;flex-wrap:wrap;gap:16px;align-items:flex-end">
+    <div>
+      <div style="font-size:12px;color:var(--text3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:6px">2 · Courts</div>
+      <input type="number" id="rec-courts" min="1" max="12" value="2" class="mm-sel" style="width:70px;font-family:'DM Mono',monospace;padding:7px 10px;font-size:14px">
+    </div>
+    <div>
+      <div style="font-size:12px;color:var(--text3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:6px">…matches to generate</div>
+      <input type="number" id="rec-num" min="1" max="60" value="8" class="mm-sel" style="width:70px;font-family:'DM Mono',monospace;padding:7px 10px;font-size:14px">
+    </div>
+    <div>
+      <div style="font-size:12px;color:var(--text3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:6px">Style</div>
+      <select id="rec-mode" onchange="onRecModeChange()" class="mm-sel" style="padding:7px 10px;font-size:14px">
+        <option value="default">Default (mixed)</option>
+        <option value="balanced">Balanced teams</option>
+        <option value="classics">Classics (rematch close games)</option>
+      </select>
+    </div>
+    <div>
+      <div style="font-size:12px;color:var(--text3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:6px">Date for saved results</div>
+      <input type="date" id="rec-date" class="mm-sel" style="padding:7px 10px;font-size:14px;color-scheme:dark">
+    </div>
+    <button onclick="generateRecommendations()" style="background:var(--accent);color:#04101f;border:none;border-radius:8px;padding:9px 18px;font-size:13px;font-weight:600;font-family:'DM Sans',sans-serif;cursor:pointer">Generate matches</button>
+    <span id="rec-hint" style="font-size:12px;color:var(--text3)"></span>
+  </div>
+  <div id="rec-mode-desc" style="font-size:12px;color:var(--text3);margin-top:-2px"></div>
+
+  <div id="rec-standings" style="margin:14px 0 0"></div>
+  <div id="rec-classics" style="margin:14px 0 0"></div>
+  <div id="rec-summary" style="margin:18px 0 14px"></div>
+  <div id="rec-output"></div>
 </div>
 
 </div><!-- /w -->
 <footer style="text-align:center;padding:24px;color:var(--text3);font-size:12px;border-top:1px solid var(--border);margin-top:4px">
-  '25–'26 Pickleball Tracker · Data from Google Sheets
+  Pickleball Tracker · Data from Google Sheets
 </footer>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
@@ -455,10 +517,19 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;fon
    REQUIRES the sheet to be Published to web:
      File → Share → Publish to web → Entire document → Publish
    ═══════════════════════════════════════════════ */
-const SHEET_ID = '1g7qADC3CuyhbqtRJ48X_t-1r6IcmYyiBchXYXPnH4mo';
+const SHEET_ID = '1KDZARGFPI-TnbaudG5cug5EJtNkX4wkA4n8TA8DtyQo';
 const TAB_PLAYERS = 'Player Stats';
 const TAB_DOUBLES = 'Doubles Match Results';
 const TAB_SINGLES = 'Singles Match Results';
+
+/* ── SCORE WRITE-BACK ──
+   Paste your deployed Google Apps Script web-app URL between the quotes
+   below to enable saving scores from the Matchmaker tab. Leave blank to
+   keep the app read-only. (Setup steps are in the companion instructions.)
+   SUBMIT_SECRET is optional and only needed if you set a passcode in the
+   Apps Script (SHARED_SECRET there must match this). */
+const SUBMIT_ENDPOINT = 'https://script.google.com/macros/s/AKfycbxoF63VXNIJ8TWdaJkbuLxSHu6IVxwLKByljh64OujYzAA8hyeqnms-FReTIj7K6gU/exec';
+const SUBMIT_SECRET = '';
 
 /* Fallback Player Stats snapshot — used only if the live
    fetch fails (e.g. sheet not yet published). Keeps the
@@ -537,6 +608,8 @@ function fmtISO(d) {
    PARSE PLAYER STATS TAB
    Header row is row 2 (row 1 is the rating note).
    ═══════════════════════════════════════════════ */
+/* The Player Stats tab now holds only the player-name column (the roster).
+   All stats are computed from the match log — see buildPlayersFromMatches. */
 function parsePlayersTab(resp) {
   const rows = resp.table.rows || [];
   const out = [];
@@ -545,36 +618,42 @@ function parsePlayersTab(resp) {
     const name = String(cellVal(c[0])).trim();
     // skip note row, header row, blanks
     if (!name || /player name/i.test(name) || /receive/i.test(name) || /rating after/i.test(name)) continue;
-    const num = i => { const v = cellVal(c[i]); const n = parseFloat(String(v).replace('%','')); return isNaN(n) ? 0 : n; };
-    // Win % cell: gviz returns percent-formatted cells as a fraction (0.88)
-    // in .v, while .f holds the display string ("88.06%"). Normalize to 0-100.
-    const winPctCell = c[6];
-    let winPct = 0;
-    if (winPctCell) {
-      if (winPctCell.f != null && String(winPctCell.f).includes('%')) {
-        winPct = parseFloat(String(winPctCell.f).replace('%','')) || 0;
-      } else {
-        const raw = parseFloat(winPctCell.v);
-        winPct = isNaN(raw) ? 0 : (raw <= 1 ? raw * 100 : raw);
-      }
-    }
-    const rawRating = cellVal(c[9]);
-    const rawRank   = cellVal(c[10]);
-    out.push({
-      name,
-      last: String(cellVal(c[8])).trim(),
-      matches: num(1),
-      wins: num(2),
-      losses: num(3),
-      ptsFor: num(4),
-      ptsAgainst: num(5),
-      winPct,
-      ptsDiff: num(7),
-      rating: (rawRating === '' || rawRating === null) ? null : parseFloat(rawRating),
-      rank:   (rawRank === '' || rawRank === null) ? null : parseInt(rawRank),
-    });
+    // a second column, if present, is treated as a last name (optional)
+    const last = c.length > 1 ? String(cellVal(c[1])).trim() : '';
+    out.push({ name, last });
   }
   return out;
+}
+
+/* Build full player stats from the roster + a set of matches.
+   Pass roster=null to include only players who actually appear in the matches
+   (used for date-filtered views); pass the roster to also include players who
+   haven't played yet (used for the master PLAYERS list / dropdowns). */
+function buildPlayersFromMatches(roster, matches) {
+  const stat = {};
+  const ensure = (name) => (stat[name] = stat[name] || { name, last:'', wins:0, losses:0, ptsFor:0, ptsAgainst:0 });
+  if (roster) roster.forEach(r => { const s = ensure(r.name); if (r.last) s.last = r.last; });
+  matches.forEach(m => {
+    const ps = parseScore(m.score);
+    m.winners.forEach(n => { const s = ensure(n); s.wins++;   if (ps.w!==null){ s.ptsFor+=ps.w; s.ptsAgainst+=ps.l; } });
+    m.losers.forEach(n  => { const s = ensure(n); s.losses++; if (ps.w!==null){ s.ptsFor+=ps.l; s.ptsAgainst+=ps.w; } });
+  });
+  const arr = Object.values(stat).map(s => {
+    const matches = s.wins + s.losses;
+    return {
+      name: s.name, last: s.last, matches,
+      wins: s.wins, losses: s.losses, ptsFor: s.ptsFor, ptsAgainst: s.ptsAgainst,
+      winPct: matches ? (s.wins / matches * 100) : 0,
+      ptsDiff: s.ptsFor - s.ptsAgainst,
+      rating: null,
+      rank: null
+    };
+  });
+  // assign a rank by win rate among players with 5+ matches (keeps the #1 highlight meaningful)
+  arr.filter(p => p.matches >= 5)
+     .sort((a,b) => b.winPct - a.winPct || b.wins - a.wins)
+     .forEach((p,i) => { p.rank = i+1; });
+  return arr;
 }
 
 /* ═══════════════════════════════════════════════
@@ -758,10 +837,11 @@ async function loadLiveData() {
 
     let loadedPlayers = false, loadedMatches = false;
     const newMatches = [];
+    let roster = null;
 
     if (pResp.status === 'fulfilled' && pResp.value?.table) {
       const parsed = parsePlayersTab(pResp.value);
-      if (parsed.length) { PLAYERS = parsed; loadedPlayers = true; }
+      if (parsed.length) { roster = parsed; loadedPlayers = true; }
     }
     if (dResp.status === 'fulfilled' && dResp.value?.table) {
       window._rawDoubles = dResp.value.table;
@@ -775,11 +855,27 @@ async function loadLiveData() {
     }
     if (loadedMatches) MATCHES = newMatches;
 
+    // All stats are computed from the match log now; the roster (names) just
+    // ensures players who haven't played yet still appear in dropdowns.
+    if (loadedPlayers || loadedMatches) {
+      PLAYERS = buildPlayersFromMatches(roster, MATCHES);
+    }
+
     if (loadedPlayers || loadedMatches) {
       // rebuild dependent UI
       populateSeasons();
+      // On the first successful load, snap the season to the newest one that
+      // actually has data (now that MATCHES is populated). Don't override a
+      // selection the user has since made on a manual refresh.
+      if (!window._seasonInitialized) {
+        const def = String(newestSeasonWithData());
+        const sel = document.getElementById('seasonSel');
+        if (sel && [...sel.options].some(o=>o.value===def)) { sel.value = def; setSeasonDates(def); }
+        window._seasonInitialized = true;
+      }
       initScoresPills();
       initProjPills();
+      initRecPills();
       render();
       const stamp = new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
       setDataStatus('ok', `Live · ${PLAYERS.filter(p=>p.matches>0).length} players, ${MATCHES.length} matches · updated ${stamp}`);
@@ -891,19 +987,39 @@ function isAggregateWindow(from, to, tf) {
   return (!from || from <= cs) && (!to || to >= isoToday());
 }
 
+/* The most recent season that actually contains matches (falls back to the
+   calendar's current season if there's no dated match data yet). */
+function newestSeasonWithData() {
+  const cur = currentSeasonEndYear();
+  let newest = null;
+  MATCHES.forEach(m => {
+    if (!m.date) return;
+    const ey = seasonEndYearFor(new Date(m.date + 'T12:00:00'));
+    if (newest === null || ey > newest) newest = ey;
+  });
+  return newest === null ? cur : newest;
+}
+
 function populateSeasons() {
   const sel = document.getElementById('seasonSel');
   if (!sel) return;
   const prev = sel.value;
   const cur = currentSeasonEndYear();
-  let earliest = cur;
-  MATCHES.forEach(m => { if (m.date) { const ey = seasonEndYearFor(new Date(m.date+'T12:00:00')); if (ey < earliest) earliest = ey; } });
+  let earliest = cur, latest = cur;
+  MATCHES.forEach(m => {
+    if (!m.date) return;
+    const ey = seasonEndYearFor(new Date(m.date + 'T12:00:00'));
+    if (ey < earliest) earliest = ey;
+    if (ey > latest) latest = ey;
+  });
+  const top = Math.max(cur, latest);
   let html = '';
-  for (let y = cur; y >= earliest; y--) html += `<option value="${y}">${seasonLabel(y)}${y===cur?' (current)':''}</option>`;
-  if (earliest < cur) html += `<option value="all">All time</option>`;
+  for (let y = top; y >= earliest; y--) html += `<option value="${y}">${seasonLabel(y)}${y===cur?' (current)':''}</option>`;
+  if (earliest < top) html += `<option value="all">All time</option>`;
   sel.innerHTML = html;
-  // keep prior selection if still valid, else default to current season
-  sel.value = (prev && [...sel.options].some(o=>o.value===prev)) ? prev : String(cur);
+  // keep prior selection if still valid, else default to the newest season that has data
+  const fallback = String(newestSeasonWithData());
+  sel.value = (prev && [...sel.options].some(o=>o.value===prev)) ? prev : fallback;
 }
 
 /* Set the date window from the chosen season (without re-render; caller renders) */
@@ -937,10 +1053,11 @@ function applyQR(v) {
 }
 function initDates() {
   populateSeasons();
-  // Default to the current season (also the Dashboard's default view).
-  const cur = String(currentSeasonEndYear());
-  document.getElementById('seasonSel').value = cur;
-  setSeasonDates(cur);
+  // Default to the newest season that actually has match data.
+  const def = String(newestSeasonWithData());
+  const sel = document.getElementById('seasonSel');
+  if (sel && [...sel.options].some(o=>o.value===def)) sel.value = def;
+  setSeasonDates(def);
 }
 
 /* ═══════════════════════════════════════════════
@@ -952,7 +1069,7 @@ function go(name, btn) {
   document.querySelectorAll('.nb').forEach(e => e.classList.remove('on'));
   document.getElementById('pg-' + name).classList.add('on');
   btn.classList.add('on');
-  document.getElementById('ctrl-bar').style.display = name === 'submit' ? 'none' : 'flex';
+  document.getElementById('ctrl-bar').style.display = name === 'matchmaker' ? 'none' : 'flex';
   render();
 }
 
@@ -964,50 +1081,20 @@ function getFiltered() {
   return playersForView().filter(p => p.matches >= minM);
 }
 
-/* Returns the player list for stat views. When the date range is the full
-   default span AND type is "all", we use the sheet's career aggregate
-   (keeps rating/rank intact). When the user narrows the date range or
-   match type, we recompute each player's record from the MATCHES log so
-   the Players / Dashboard / Leaderboard / Charts views actually respond. */
+/* Returns the player list for stat views, always computed from the match log
+   within the active date range + match type. (All stats live in the match
+   data now; the Player Stats tab only supplies the roster of names.) */
 function playersForView() {
   const from = document.getElementById('dateFrom').value;
   const to   = document.getElementById('dateTo').value;
   const tf   = document.getElementById('typeF').value;
-  if (isAggregateWindow(from, to, tf)) return PLAYERS;    // current-season / all-time aggregate from sheet
-
-  // Recompute from the match log within the active filters.
   const ms = MATCHES.filter(m =>
     (tf === 'all' || m.type === tf) &&
     (!from || m.date >= from) &&
     (!to   || m.date <= to)
   );
-  const stat = {};
-  const ensure = name => (stat[name] = stat[name] || {name, wins:0, losses:0, ptsFor:0, ptsAgainst:0});
-  ms.forEach(m => {
-    const ps = parseScore(m.score);
-    const wPts = ps.w, lPts = ps.l;
-    m.winners.forEach(n => { const s = ensure(n); s.wins++;   if (wPts!==null){ s.ptsFor+=wPts; s.ptsAgainst+=lPts; } });
-    m.losers.forEach(n  => { const s = ensure(n); s.losses++; if (wPts!==null){ s.ptsFor+=lPts; s.ptsAgainst+=wPts; } });
-  });
-
-  // Merge in last name / rating / rank from the career record for display continuity.
-  return Object.values(stat).map(s => {
-    const career = PLAYERS.find(p => p.name === s.name) || {};
-    const matches = s.wins + s.losses;
-    return {
-      name: s.name,
-      last: career.last || '',
-      matches,
-      wins: s.wins,
-      losses: s.losses,
-      ptsFor: s.ptsFor,
-      ptsAgainst: s.ptsAgainst,
-      winPct: matches ? (s.wins / matches * 100) : 0,
-      ptsDiff: s.ptsFor - s.ptsAgainst,
-      rating: null,   // rating/rank are season-long concepts; not meaningful for a sub-range
-      rank: null,
-    };
-  });
+  // roster=null → only include players who actually played in this window
+  return buildPlayersFromMatches(null, ms);
 }
 function filteredMatches() {
   const tf   = document.getElementById('typeF').value;
@@ -1033,6 +1120,7 @@ function render() {
   if (activePg === 'charts')      renderCharts(players);
   if (activePg === 'insights')    renderInsights();
   if (activePg === 'projections') renderProjections();
+  if (activePg === 'matchmaker')  renderMatchmakerControls();
 }
 
 /* ═══════════════════════════════════════════════
@@ -1040,15 +1128,22 @@ function render() {
    ═══════════════════════════════════════════════ */
 function renderDashCards(players) {
   const active = players.filter(p => p.matches > 0);
-  const totalM = active.reduce((s,p) => s + p.matches, 0) / 2; // each match counted by 2 players
   const totalW = active.reduce((s,p) => s + p.wins, 0);
-  const rated = active.filter(p => p.rating !== null);
-  const topRat = rated.length ? rated.sort((a,b) => b.rating - a.rating)[0] : null;
+
+  // Count matches and points from the match log directly so doubles aren't
+  // double-counted (a per-player sum would count each doubles match twice).
+  const ms = getInsightsMatches();
+  const totalM = ms.length;
+  let totalPts = 0;
+  ms.forEach(m => { const ps = parseScore(m.score); if (ps.w !== null) totalPts += ps.w + ps.l; });
+
+  const eligible = active.filter(p => p.matches >= 5).sort((a,b) => b.winPct - a.winPct || b.wins - a.wins);
+  const topWR = eligible.length ? eligible[0] : null;
   document.getElementById('dash-cards').innerHTML = `
     <div class="sc bl"><div class="l">Active players</div><div class="v">${active.length}</div><div class="s">${PLAYERS.length} total roster</div></div>
-    <div class="sc gr"><div class="l">Matches logged</div><div class="v">${Math.round(totalM)}</div><div class="s">~${(totalW/active.length).toFixed(1)} wins/player avg</div></div>
-    <div class="sc am"><div class="l">Points scored</div><div class="v">${active.reduce((s,p)=>s+p.ptsFor,0).toLocaleString()}</div><div class="s">League-wide</div></div>
-    <div class="sc pu"><div class="l">Top rated</div><div class="v" style="font-size:18px">${topRat ? topRat.name : '—'}</div><div class="s">${topRat ? topRat.rating.toFixed(3) : ''}</div></div>`;
+    <div class="sc gr"><div class="l">Matches logged</div><div class="v">${totalM}</div><div class="s">${active.length?'~'+(totalW/active.length).toFixed(1)+' wins/player avg':''}</div></div>
+    <div class="sc am"><div class="l">Points scored</div><div class="v">${totalPts.toLocaleString()}</div><div class="s">League-wide</div></div>
+    <div class="sc pu"><div class="l">Top win rate</div><div class="v" style="font-size:18px">${topWR ? topWR.name : '—'}</div><div class="s">${topWR ? topWR.winPct.toFixed(1)+'% · 5+ games' : ''}</div></div>`;
 }
 
 /* ═══════════════════════════════════════════════
@@ -1835,6 +1930,823 @@ function renderProjections() {
 }
 
 /* ═══════════════════════════════════════════════
+   MATCHMAKER
+   Builds a fair, varied session schedule. Balances
+   play time (fewest-played sit out least), avoids
+   repeating partnerships/matchups, maximizes players
+   on court, and uses singles to fill gaps.
+   ═══════════════════════════════════════════════ */
+let recSelected = [];
+let recMatches = [];      // {id, round, type, a:[names], b:[names]}
+let recPool = [];         // pool used at generation time (for sit-out calc)
+let recSeq = 0;
+let recEditId = null;
+let recMode = 'default';  // default | balanced | classics
+let recTeams = null;      // fixed teams for balanced mode: [[p1,p2], ...]
+let recClassics = [];     // for classics mode: original games being rematched, parallel to recMatches
+
+const REC_MODE_DESC = {
+  default:  'Mixed games that spread partners and opponents around — nobody plays the same combo twice if it can be helped.',
+  balanced: 'Strong+weak pairings so teams are even, and everyone plays an equal number of games with an even split of doubles and singles. With an even number of players teams stay fixed all night; with an odd number they rotate so the singles are shared fairly.',
+  classics: 'Recreates the closest games in your history (smallest point margins) among the selected players, so you can run back the nail-biters. The original date and score for each is listed below to compare against.'
+};
+function onRecModeChange() {
+  const d = document.getElementById('rec-mode-desc');
+  const m = (document.getElementById('rec-mode')||{}).value || 'default';
+  if (d) d.textContent = REC_MODE_DESC[m] || '';
+}
+
+function initRecPills() {
+  const el = document.getElementById('rec-pills');
+  if (!el) return;
+  const names = PLAYERS.filter(p=>p.matches>0).map(p=>p.name).sort();
+  recSelected = recSelected.filter(n => names.includes(n));
+  el.innerHTML = names.length ? names.map(n =>
+    `<span class="pill${recSelected.includes(n)?' on':''}" onclick="toggleRecPill('${n.replace(/'/g,"\\'")}',this)">${n}</span>`
+  ).join('') : '<span style="color:var(--text3);font-size:12px">No players loaded yet.</span>';
+  renderRecCount();
+}
+function toggleRecPill(name, el) {
+  const i = recSelected.indexOf(name);
+  if (i===-1) { recSelected.push(name); el.classList.add('on'); }
+  else { recSelected.splice(i,1); el.classList.remove('on'); }
+  renderRecCount();
+}
+function recSelectAll() {
+  recSelected = PLAYERS.filter(p=>p.matches>0).map(p=>p.name);
+  document.querySelectorAll('#rec-pills .pill').forEach(p=>p.classList.add('on'));
+  renderRecCount();
+}
+function recClearAll() {
+  recSelected = [];
+  document.querySelectorAll('#rec-pills .pill').forEach(p=>p.classList.remove('on'));
+  renderRecCount();
+}
+function recGuests() {
+  return [0,1,2,3].map(i => (document.getElementById('rec-guest-'+i)?.value||'').trim()).filter(Boolean);
+}
+function getRecPool() {
+  return [...recSelected, ...recGuests()];
+}
+function renderRecCount() {
+  const el = document.getElementById('rec-count');
+  if (el) el.textContent = `${getRecPool().length} playing`;
+}
+function renderMatchmakerControls() {
+  if (!document.querySelector('#rec-pills .pill') && PLAYERS.some(p=>p.matches>0)) initRecPills();
+  renderRecCount();
+  if (recMatches.length) renderRecommendations();
+}
+
+/* —— scheduling helpers —— */
+const pairKey = (a,b) => [a,b].sort().join('|');
+const shuffle = arr => { const a=[...arr]; for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];} return a; };
+
+/* how many doubles (d) and singles (s) to run on `courts` courts with P players, maximizing players on court (doubles preferred) */
+function allocateCourts(P, courts) {
+  let d = Math.min(courts, Math.floor(P/4));
+  let remP = P - 4*d, remC = courts - d, s = 0;
+  while (remC > 0 && remP >= 2) { s++; remP -= 2; remC--; }
+  return { d, s };
+}
+
+/* greedily form 2-player teams that minimize repeated partnerships */
+function formTeams(players, partner) {
+  const rem = [...players], teams = [];
+  while (rem.length >= 2) {
+    let best=[], bc=Infinity;
+    for (let i=0;i<rem.length;i++) for (let j=i+1;j<rem.length;j++) {
+      const c = partner[pairKey(rem[i],rem[j])]||0;
+      if (c<bc){bc=c;best=[[i,j]];} else if (c===bc) best.push([i,j]);
+    }
+    const [i,j] = best[Math.floor(Math.random()*best.length)];
+    teams.push([rem[i], rem[j]]);
+    rem.splice(j,1); rem.splice(i,1);
+  }
+  return teams;
+}
+/* pair teams into doubles matches minimizing repeated matchups */
+function pairTeams(teams, versus) {
+  const rem = [...teams], matches = [];
+  while (rem.length >= 2) {
+    const t1 = rem.shift();
+    let bi=0, bc=Infinity;
+    for (let k=0;k<rem.length;k++) {
+      const t2 = rem[k];
+      const c = (versus[pairKey(t1[0],t2[0])]||0)+(versus[pairKey(t1[0],t2[1])]||0)+(versus[pairKey(t1[1],t2[0])]||0)+(versus[pairKey(t1[1],t2[1])]||0);
+      if (c<bc){bc=c;bi=k;}
+    }
+    matches.push({ type:'Doubles', a:t1, b:rem[bi] });
+    rem.splice(bi,1);
+  }
+  return matches;
+}
+/* pair singles players minimizing repeated matchups */
+function pairSingles(players, versus) {
+  const rem = [...players], matches = [];
+  while (rem.length >= 2) {
+    const p1 = rem.shift();
+    let bi=0, bc=Infinity;
+    for (let k=0;k<rem.length;k++) { const c=versus[pairKey(p1,rem[k])]||0; if (c<bc){bc=c;bi=k;} }
+    matches.push({ type:'Singles', a:[p1], b:[rem[bi]] });
+    rem.splice(bi,1);
+  }
+  return matches;
+}
+
+function buildOneSchedule(pool, courts, numMatches) {
+  const games = [];
+  const gp = {}; pool.forEach(p=>gp[p]=0);
+  const partner = {}, versus = {};
+  const bump = (m,a,b)=>{ m[pairKey(a,b)]=(m[pairKey(a,b)]||0)+1; };
+
+  let left = numMatches, round = 0;
+  while (left > 0) {
+    round++;
+    const courtsThis = Math.min(courts, left);
+    const { d, s } = allocateCourts(pool.length, courtsThis);
+    const need = 4*d + 2*s;
+    if (need < 2) break; // can't form any game
+    // pick players: fewest games first, random tiebreak
+    const playing = shuffle(pool).sort((a,b)=>gp[a]-gp[b]).slice(0, need);
+    const grp = shuffle(playing);
+    const doublesPlayers = grp.slice(0, 4*d);
+    const singlesPlayers = grp.slice(4*d, 4*d + 2*s);
+
+    const roundGames = [];
+    // doubles: greedy teams (minimize repeat partners) → pair into matches (minimize repeat matchups)
+    roundGames.push(...pairTeams(formTeams(doublesPlayers, partner), versus));
+    // singles
+    roundGames.push(...pairSingles(singlesPlayers, versus));
+
+    roundGames.forEach(g => {
+      [...g.a,...g.b].forEach(p=>gp[p]++);
+      if (g.a.length===2) bump(partner,g.a[0],g.a[1]);
+      if (g.b.length===2) bump(partner,g.b[0],g.b[1]);
+      for (const x of g.a) for (const y of g.b) bump(versus,x,y);
+      games.push({ round, ...g });
+      left--;
+    });
+    if (roundGames.length===0) break;
+  }
+  return games;
+}
+
+function scoreSchedule(games, pool) {
+  const gp={}, partner={}, versus={};
+  pool.forEach(p=>gp[p]=0);
+  const bump=(m,a,b)=>{ m[pairKey(a,b)]=(m[pairKey(a,b)]||0)+1; };
+  games.forEach(g=>{
+    [...g.a,...g.b].forEach(p=>gp[p]=(gp[p]||0)+1);
+    if (g.a.length===2) bump(partner,g.a[0],g.a[1]);
+    if (g.b.length===2) bump(partner,g.b[0],g.b[1]);
+    for (const x of g.a) for (const y of g.b) bump(versus,x,y);
+  });
+  let repeats=0;
+  // progressive penalty so partnerships are spread evenly (a 3rd pairing hurts far more than a 2nd)
+  Object.values(partner).forEach(c=>{ if(c>1) repeats += (c-1)*(c-1)*5; });
+  Object.values(versus).forEach(c=>{ if(c>1) repeats += (c-1); });
+  const counts = pool.map(p=>gp[p]);
+  const fair = counts.length ? (Math.max(...counts)-Math.min(...counts)) : 0;
+  return repeats + fair*2;
+}
+
+/* win rate lookup for a player (0–100), computed from the full match log.
+   Used by the balanced style. Unknown players → 50 (neutral). */
+function recWinPct(name) {
+  if (recWinPct._cache && recWinPct._cacheKey === MATCHES.length) {
+    return recWinPct._cache[name] != null ? recWinPct._cache[name] : 50;
+  }
+  const w = {}, n = {};
+  MATCHES.forEach(m => {
+    m.winners.forEach(p => { w[p]=(w[p]||0)+1; n[p]=(n[p]||0)+1; });
+    m.losers.forEach(p  => { n[p]=(n[p]||0)+1; });
+  });
+  const cache = {};
+  Object.keys(n).forEach(p => { cache[p] = n[p] ? (w[p]||0)/n[p]*100 : 50; });
+  recWinPct._cache = cache; recWinPct._cacheKey = MATCHES.length;
+  return cache[name] != null ? cache[name] : 50;
+}
+
+/* BALANCED (underdog handicap): build FIXED teams for the whole night.
+   Pair strongest with weakest so every team's combined skill is ~equal,
+   then schedule those same teams against each other across all rounds. */
+function buildBalancedTeams(pool) {
+  const ranked = [...pool].sort((a,b)=> recWinPct(b)-recWinPct(a));
+  const teams = [];
+  let i = 0, j = ranked.length - 1;
+  while (i < j) { teams.push([ranked[i], ranked[j]]); i++; j--; }
+  if (i === j) teams.push([ranked[i]]); // odd player out plays solo on their "team"
+  return teams;
+}
+function buildBalancedSchedule(teams, courts, numMatches) {
+  const games = [];
+  const teamOf = {};                                            // player -> team index
+  teams.forEach((t,ti) => t.forEach(p => teamOf[p] = ti));
+  const tg = teams.map(()=>0);                                  // doubles games per team (= doubles games per player, since teams are pairs)
+  const vs = {};                                                // team-vs-team meeting counts (varies matchups)
+  const pSin = {};                                              // singles games per player
+  const allPlayers = [];
+  teams.forEach(t => t.forEach(p => { pSin[p] = 0; allPlayers.push(p); }));
+  const fullTeams = teams.map((t,i)=>i).filter(i => teams[i].length === 2);
+  const P = allPlayers.length;
+  const totGames = p => tg[teamOf[p]] + pSin[p];                // total games a player has so far
+  let left = numMatches, round = 0, guard = 0;
+
+  while (left > 0 && guard++ < 4000) {
+    round++;
+    const courtsThis = Math.min(courts, left);
+    let { d, s } = allocateCourts(P, courtsThis);                // fill courts: doubles preferred, then singles
+    if (d + s === 0) break;
+
+    const usedTeams = new Set();
+    const usedPlayers = new Set();
+    const roundGames = [];
+
+    // 1) doubles: full team vs full team. Pick the least-played teams (keeps every
+    //    player's doubles count even, since each team is a fixed pair), then the
+    //    opponent each has faced least (varies matchups).
+    while (roundGames.filter(g=>g.type==='Doubles').length < d && left > 0) {
+      const avail = [...fullTeams].filter(ti => !usedTeams.has(ti)).sort((a,b)=> tg[a]-tg[b]);
+      if (avail.length < 2) break;
+      const t1 = avail[0];
+      const rest = avail.slice(1).sort((a,b)=> ((vs[t1]&&vs[t1][a])||0) - ((vs[t1]&&vs[t1][b])||0) || tg[a]-tg[b]);
+      const t2 = rest[0];
+      usedTeams.add(t1); usedTeams.add(t2);
+      teams[t1].forEach(p=>usedPlayers.add(p));
+      teams[t2].forEach(p=>usedPlayers.add(p));
+      roundGames.push({ round, type:'Doubles', a:teams[t1].slice(), b:teams[t2].slice(), _ti:t1, _tj:t2 });
+      vs[t1]=vs[t1]||{}; vs[t2]=vs[t2]||{};
+      vs[t1][t2]=(vs[t1][t2]||0)+1; vs[t2][t1]=(vs[t2][t1]||0)+1;
+      tg[t1]++; tg[t2]++; left--;
+    }
+
+    // 2) singles: from players free this round, pick the neediest (fewest singles
+    //    so far, then fewest total games) so each player's singles count — and
+    //    overall game count — stays as even as possible. Prefer cross-team foes.
+    if (left > 0 && s > 0) {
+      let madeSingles = 0;
+      while (madeSingles < s && left > 0) {
+        const avail = allPlayers.filter(p => !usedPlayers.has(p));
+        if (avail.length < 2) break;
+        avail.sort((a,b)=> pSin[a]-pSin[b] || totGames(a)-totGames(b));
+        const p1 = avail[0];
+        const rest = avail.slice(1).sort((a,b)=>
+          (teamOf[a]===teamOf[p1]?1:0) - (teamOf[b]===teamOf[p1]?1:0)   // a different team first
+          || pSin[a]-pSin[b] || totGames(a)-totGames(b));
+        const p2 = rest[0];
+        usedPlayers.add(p1); usedPlayers.add(p2);
+        roundGames.push({ round, type:'Singles', a:[p1], b:[p2], _ti:teamOf[p1], _tj:teamOf[p2] });
+        pSin[p1]++; pSin[p2]++;
+        madeSingles++; left--;
+      }
+    }
+
+    if (!roundGames.length) break;
+    games.push(...roundGames);
+  }
+  return games;
+}
+
+/* BALANCED (odd player count): fixed teams can't share the singles load fairly
+   when there's an odd player out, so instead we rotate. Each round the players
+   with the fewest games so far are chosen (so byes rotate evenly), then split
+   into doubles/singles slots to even out each player's doubles-vs-singles mix,
+   with balanced teams (strongest+weakest) formed per round. Everyone ends up
+   with ~equal games and ~equal doubles and singles — nobody is stuck. */
+function buildBalancedRotating(pool, courts, numMatches) {
+  const games = [];
+  const gp = {}, pd = {}, ps = {};
+  pool.forEach(p => { gp[p]=0; pd[p]=0; ps[p]=0; });
+  const P = pool.length;
+  let left = numMatches, round = 0, guard = 0;
+
+  while (left > 0 && guard++ < 4000) {
+    round++;
+    const courtsThis = Math.min(courts, left);
+    const { d, s } = allocateCourts(P, courtsThis);
+    if (d + s === 0) break;
+    const need = 4*d + 2*s;
+
+    // choose who plays: fewest games first (byes rotate), random tiebreak
+    const selected = [...pool].sort((a,b)=> gp[a]-gp[b] || Math.random()-0.5).slice(0, need);
+    // assign formats: players who've played proportionally more doubles get the
+    // singles slots (and vice versa) so each player's D/S mix stays even
+    const order = [...selected].sort((a,b)=> (pd[b]-ps[b]) - (pd[a]-ps[a]) || Math.random()-0.5);
+    const singlesPlayers = order.slice(0, 2*s);
+    const doublesPlayers = order.slice(2*s);
+
+    const roundGames = [];
+    // doubles: balanced teams (strongest+weakest) on each court
+    const dSorted = [...doublesPlayers].sort((a,b)=> recWinPct(b)-recWinPct(a));
+    for (let c=0; c<d; c++) {
+      const four = dSorted.slice(c*4, c*4+4);
+      if (four.length < 4) break;
+      const a = [four[0], four[3]], b = [four[1], four[2]];
+      roundGames.push({ round, type:'Doubles', a, b });
+      a.concat(b).forEach(p=>{ gp[p]++; pd[p]++; });
+    }
+    // singles: pair closest in skill
+    const sSorted = [...singlesPlayers].sort((a,b)=> recWinPct(b)-recWinPct(a));
+    for (let c=0; c<s; c++) {
+      const two = sSorted.slice(c*2, c*2+2);
+      if (two.length < 2) break;
+      roundGames.push({ round, type:'Singles', a:[two[0]], b:[two[1]] });
+      two.forEach(p=>{ gp[p]++; ps[p]++; });
+    }
+
+    if (!roundGames.length) break;
+    games.push(...roundGames);
+    left -= roundGames.length;
+  }
+  return games;
+}
+
+/* CLASSICS: find the closest games in history (smallest point margin) among the
+   selected players and recreate those exact matchups. Returns games annotated
+   with the original date/score/margin so we can show a comparison table.
+   Each historical matchup is used once; ties on margin break toward more recent. */
+function buildClassicsSchedule(pool, courts, numMatches) {
+  const inPool = new Set(pool);
+
+  // 1. Gather + rank the close historical games among the pool's players.
+  const classics = [];
+  MATCHES.forEach(m => {
+    const players = [...m.winners, ...m.losers];
+    if (!players.length || !players.every(p => inPool.has(p))) return;
+    const ps = parseScore(m.score);
+    if (ps.w == null || ps.l == null) return;
+    classics.push({
+      type: m.type,
+      a: m.winners.slice(),   // side A = original winners
+      b: m.losers.slice(),    // side B = original losers
+      origDate: m.date || '',
+      origWin: ps.w, origLose: ps.l,
+      margin: Math.abs(ps.w - ps.l)
+    });
+  });
+  // closest first; ties → more recent first
+  classics.sort((x,y) => x.margin - y.margin || (y.origDate||'').localeCompare(x.origDate||''));
+  // de-dupe identical matchups (same players on each side) — each classic used once/night
+  const sig = c => c.type + '|' + [...c.a].sort().join(',') + '|vs|' + [...c.b].sort().join(',');
+  const usedSig = new Set();
+  const ranked = [];
+  for (const c of classics) { const s = sig(c); if (usedSig.has(s)) continue; usedSig.add(s); ranked.push(c); }
+
+  // 2. Build rounds. Each round fills the courts via allocateCourts (doubles
+  //    preferred, max players on court), preferring to recreate close classics
+  //    and filling any leftover slots with fresh matchups so nobody sits out
+  //    unnecessarily.
+  const games = [];
+  const gp = {}; pool.forEach(p => gp[p] = 0);  // games played per player (fairness)
+  const consumed = new Set();                    // classic signatures already scheduled
+  let left = numMatches, round = 0;
+
+  while (left > 0) {
+    round++;
+    const courtsThis = Math.min(courts, left);
+    let { d: needD, s: needS } = allocateCourts(pool.length, courtsThis);
+    if (needD + needS === 0) break;
+
+    const usedThisRound = new Set();
+    const roundGames = [];
+    const avail = side => side.every(p => inPool.has(p) && !usedThisRound.has(p));
+
+    // pick the best available classic of a given type: unused, players free this
+    // round, fewest games so far, then closest margin
+    const pickClassic = (type) => {
+      const cand = ranked.filter(c => c.type === type && !consumed.has(sig(c)) && avail([...c.a, ...c.b]));
+      if (!cand.length) return null;
+      cand.sort((p,q) => {
+        const gpSum = c => [...c.a, ...c.b].reduce((t,n)=>t+gp[n], 0);
+        return gpSum(p) - gpSum(q) || p.margin - q.margin;
+      });
+      const c = cand[0];
+      consumed.add(sig(c));
+      [...c.a, ...c.b].forEach(p => usedThisRound.add(p));
+      return c;
+    };
+
+    // 2a. fill doubles slots, then singles slots, with classics where possible
+    for (let i = 0; i < needD; i++) {
+      const c = pickClassic('Doubles');
+      if (!c) break;
+      roundGames.push({ type:'Doubles', a:c.a.slice(), b:c.b.slice(), _orig:{ date:c.origDate, win:c.origWin, lose:c.origLose, margin:c.margin } });
+      needD--; i--;
+    }
+    for (let i = 0; i < needS; i++) {
+      const c = pickClassic('Singles');
+      if (!c) break;
+      roundGames.push({ type:'Singles', a:c.a.slice(), b:c.b.slice(), _orig:{ date:c.origDate, win:c.origWin, lose:c.origLose, margin:c.margin } });
+      needS--; i--;
+    }
+
+    // 2b. fill any leftover slots with fresh matchups among remaining players
+    //     (fewest games first) so the courts stay full
+    let remaining = pool.filter(p => !usedThisRound.has(p)).sort((a,b)=> gp[a]-gp[b]);
+    while (needD > 0 && remaining.length >= 4) {
+      const four = remaining.slice(0,4); remaining = remaining.slice(4);
+      roundGames.push({ type:'Doubles', a:[four[0], four[3]], b:[four[1], four[2]] });
+      needD--;
+    }
+    while (needS > 0 && remaining.length >= 2) {
+      const two = remaining.slice(0,2); remaining = remaining.slice(2);
+      roundGames.push({ type:'Singles', a:[two[0]], b:[two[1]] });
+      needS--;
+    }
+
+    if (!roundGames.length) break;  // can't form anything — stop
+    roundGames.forEach(g => { [...g.a,...g.b].forEach(p=>gp[p]++); games.push({ round, ...g }); left--; });
+  }
+  return games;
+}
+
+function generateRecommendations() {
+  const pool = getRecPool();
+  const hint = document.getElementById('rec-hint');
+  const courts = Math.max(1, parseInt(document.getElementById('rec-courts').value)||1);
+  const num = Math.max(1, parseInt(document.getElementById('rec-num').value)||1);
+  if (pool.length < 2) { hint.textContent = 'Select at least 2 players.'; hint.style.color='var(--amber)'; return; }
+  // dedupe names (guest could match a player)
+  const seen=new Set(), dupes=[];
+  pool.forEach(n=>{ if(seen.has(n.toLowerCase())) dupes.push(n); seen.add(n.toLowerCase()); });
+  if (dupes.length) { hint.textContent = `Duplicate name: ${dupes[0]}. Make names unique.`; hint.style.color='var(--amber)'; return; }
+  hint.textContent='';
+
+  const mode = (document.getElementById('rec-mode') || {}).value || 'default';
+  recMode = mode;
+  recTeams = null;  // cleared unless balanced mode sets it
+  recClassics = []; // cleared unless classics mode sets it
+
+  let sched;
+  if (mode === 'balanced') {
+    // Fixed teams work cleanly only with an even number of players. With an odd
+    // count, one player would have no partner and be stuck in singles — so we
+    // rotate instead, sharing the singles load evenly across everyone.
+    if (pool.length % 2 === 0) {
+      recTeams = buildBalancedTeams(pool);
+      sched = buildBalancedSchedule(recTeams, courts, num);
+    } else {
+      recTeams = null;  // teams rotate; standings are per-player
+      sched = buildBalancedRotating(pool, courts, num);
+    }
+  } else if (mode === 'classics') {
+    sched = buildClassicsSchedule(pool, courts, num);
+    if (!sched.length) {
+      document.getElementById('rec-hint').textContent = 'No scored games found among these players yet — Classics needs match history.';
+      document.getElementById('rec-hint').style.color = 'var(--amber)';
+    }
+  } else {
+    // DEFAULT — unchanged: try many random schedules, keep the one that best
+    // spreads partners/opponents and keeps games even.
+    let best=null;
+    for (let attempt=0; attempt<300; attempt++) {
+      const s = buildOneSchedule(pool, courts, num);
+      const sc = scoreSchedule(s, pool);
+      if (!best || sc < best.sc) best = { sched: s, sc };
+    }
+    sched = best.sched;
+  }
+
+  recPool = [...pool];
+  recMatches = sched.map(g => ({ id:++recSeq, round:g.round, type:g.type, a:g.a, b:g.b, _ti:g._ti, _tj:g._tj, _orig:g._orig }));
+  recEditId = null;
+  renderRecommendations();
+}
+
+function renderRecommendations() {
+  const pool = getRecPool();
+  const out = document.getElementById('rec-output');
+  const summary = document.getElementById('rec-summary');
+  if (!recMatches.length) { out.innerHTML=''; summary.innerHTML=''; renderRecStandings(); renderRecClassics(); return; }
+
+  // play counts
+  const gp={}; pool.forEach(p=>gp[p]=0);
+  recMatches.forEach(g=>[...g.a,...g.b].forEach(p=>{ gp[p]=(gp[p]||0)+1; }));
+  const counts = Object.entries(gp).sort((a,b)=>b[1]-a[1]);
+  const mn = Math.min(...Object.values(gp)), mx = Math.max(...Object.values(gp));
+
+  summary.innerHTML = `
+    <div class="slbl" style="margin-bottom:6px">Play count <span style="text-transform:none;letter-spacing:0;color:var(--text3)">· ${recMatches.length} matches · ${mn===mx?`everyone plays ${mn}`:`${mn}–${mx} games each`}</span></div>
+    <div>${counts.map(([n,c])=>`<span class="mm-count">${n} <b>${c}</b></span>`).join('')}</div>`;
+
+  // group by round
+  const rounds = {};
+  recMatches.forEach(g=>{ (rounds[g.round]=rounds[g.round]||[]).push(g); });
+  const poolOpts = (sel) => ['<option value="">— empty —</option>'].concat(
+    pool.map(n=>`<option value="${n.replace(/"/g,'&quot;')}" ${n===sel?'selected':''}>${n}</option>`)
+  ).join('');
+
+  out.innerHTML = Object.keys(rounds).map(rn => {
+    const games = rounds[rn];
+    const cards = games.map((g, ci) => {
+      if (g.id === recEditId) {
+        // edit mode
+        const isD = g.type==='Doubles';
+        return `<div class="mm-match" style="border-color:var(--accent)">
+          <div class="mm-court">Court ${ci+1}</div>
+          <div class="mm-teams" style="gap:6px">
+            <select class="mm-sel" id="ed-${g.id}-a0">${poolOpts(g.a[0])}</select>
+            <select class="mm-sel" id="ed-${g.id}-a1" ${isD?'':'style="display:none"'}>${poolOpts(g.a[1])}</select>
+            <span class="mm-vs">vs</span>
+            <select class="mm-sel" id="ed-${g.id}-b0">${poolOpts(g.b[0])}</select>
+            <select class="mm-sel" id="ed-${g.id}-b1" ${isD?'':'style="display:none"'}>${poolOpts(g.b[1])}</select>
+            <select class="mm-sel" id="ed-${g.id}-type" onchange="toggleEditType(${g.id})">
+              <option value="Doubles" ${isD?'selected':''}>Doubles</option>
+              <option value="Singles" ${!isD?'selected':''}>Singles</option>
+            </select>
+          </div>
+          <div class="mm-actions">
+            <button class="mm-btn" onclick="saveRecMatch(${g.id})" style="color:var(--green);border-color:var(--green)">Save</button>
+            <button class="mm-btn" onclick="cancelRecEdit()">Cancel</button>
+          </div>
+        </div>`;
+      }
+      const badge = g.type==='Singles' ? '<span class="badge bg-blue">S</span>' : '<span class="badge bg-amber">D</span>';
+      const rematch = g._orig
+        ? `<span class="badge bg-classic" title="Rematch of a ${g._orig.margin}-point game (${g._orig.win}–${g._orig.lose}${g._orig.date?', '+g._orig.date:''})">★ rematch</span>`
+        : '';
+      const saved = g._saved;
+      return `<div class="mm-match${g._orig?' is-classic':''}">
+        <div class="mm-court">Court ${ci+1}</div>
+        ${badge}${rematch}
+        <div class="mm-teams">
+          <span class="mm-team">${g.a.join(' & ')}</span>
+          <span class="mm-vs">vs</span>
+          <span class="mm-team">${g.b.join(' & ')}</span>
+        </div>
+        <div class="mm-score">
+          <input type="number" min="0" max="99" id="sc-${g.id}-a" class="mm-scin" placeholder="–" ${saved?'disabled':''} value="${g._sa!=null?g._sa:''}" oninput="updateRecWinner(${g.id})">
+          <span style="color:var(--text3);font-family:'DM Mono',monospace">–</span>
+          <input type="number" min="0" max="99" id="sc-${g.id}-b" class="mm-scin" placeholder="–" ${saved?'disabled':''} value="${g._sb!=null?g._sb:''}" oninput="updateRecWinner(${g.id})">
+        </div>
+        <span class="mm-winner" id="win-${g.id}" style="font-size:12px;font-weight:600;min-width:90px"></span>
+        <div class="mm-actions">
+          ${saved
+            ? `<span class="mm-st" style="color:var(--green)">Saved ✓</span>`
+            : `<button class="mm-btn" onclick="submitRecResult(${g.id})" style="color:var(--green);border-color:var(--green)">Save result</button>
+               <button class="mm-btn" onclick="editRecMatch(${g.id})">Edit</button>
+               <button class="mm-btn del" onclick="deleteRecMatch(${g.id})">Delete</button>
+               <span class="mm-st" id="st-${g.id}" style="color:var(--text3)"></span>`}
+        </div>
+      </div>`;
+    }).join('');
+    // who's sitting out this round (relative to the generation-time pool)
+    const playingThisRound = new Set();
+    games.forEach(g=>[...g.a,...g.b].forEach(p=>playingThisRound.add(p)));
+    const sitting = (recPool.length?recPool:pool).filter(p=>!playingThisRound.has(p));
+    const sitLine = sitting.length
+      ? `<div style="font-size:12px;color:var(--text3);margin:2px 0 4px;padding-left:2px">Sitting out: <span style="color:var(--text2)">${sitting.join(', ')}</span></div>`
+      : '';
+    return `<div class="mm-round"><div class="mm-round-h">Round ${rn}</div>${cards}${sitLine}</div>`;
+  }).join('');
+
+  // restore winner previews for any cards that already have scores typed/saved
+  recMatches.forEach(g => updateRecWinner(g.id));
+  renderRecStandings();
+  renderRecClassics();
+}
+
+function deleteRecMatch(id) {
+  recMatches = recMatches.filter(g=>g.id!==id);
+  if (recEditId===id) recEditId=null;
+  renderRecommendations();
+}
+
+/* Live winner preview on a match card as scores are typed. */
+function updateRecWinner(id) {
+  const g = recMatches.find(x=>x.id===id);
+  const el = document.getElementById('win-'+id);
+  if (!g) return;
+  const sa = document.getElementById('sc-'+id+'-a');
+  const sb = document.getElementById('sc-'+id+'-b');
+  const a = parseInt(sa && sa.value, 10), b = parseInt(sb && sb.value, 10);
+  // remember typed scores on the match so the night standings can use them live
+  g._sa = isNaN(a) ? null : a;
+  g._sb = isNaN(b) ? null : b;
+  if (el) {
+    if (isNaN(a) || isNaN(b)) { el.textContent = ''; }
+    else if (a === b) { el.innerHTML = '<span style="color:var(--amber)">tie — can\'t save</span>'; }
+    else {
+      const winners = (a > b ? g.a : g.b).filter(Boolean).join(' & ');
+      el.innerHTML = `<span style="color:var(--text3);font-weight:400">won by</span> <span style="color:var(--green)">${winners}</span>`;
+    }
+  }
+  renderRecStandings();
+  renderRecClassics();
+}
+
+/* BALANCED mode: tally the night's team results from entered/saved scores and
+   show who's winning. A team gets a win for each match its lineup wins. */
+function renderRecStandings() {
+  const el = document.getElementById('rec-standings');
+  if (!el) return;
+  if (recMode !== 'balanced' && recMode !== 'default') { el.innerHTML = ''; return; }
+
+  const hasTeams = !!(recTeams && recTeams.length);
+  const teamKey = t => [...t].sort().join(' & ');
+  const tStats = hasTeams ? recTeams.map(t => ({ key: teamKey(t), names: t, w:0, l:0, pf:0, pa:0 })) : [];
+  const byKey = {}; tStats.forEach(s => byKey[s.key] = s);
+
+  // per-player record across ALL their games (singles + doubles)
+  const pStats = {};
+  const ensureP = n => (pStats[n] = pStats[n] || { name:n, w:0, l:0, pf:0, pa:0, gp:0 });
+  // seed the roster so everyone shows up even before scores are entered
+  (recPool && recPool.length ? recPool : []).forEach(n => ensureP(n));
+  if (hasTeams) recTeams.forEach(t => t.forEach(n => ensureP(n)));
+
+  recMatches.forEach(g => {
+    const sa = g._sa, sb = g._sb;
+    if (sa == null || sb == null || sa === sb) return;
+    const aWon = sa > sb;
+    // team standings — only full team-vs-team (doubles) matches map to fixed teams
+    if (hasTeams) {
+      const A = byKey[teamKey(g.a)], B = byKey[teamKey(g.b)];
+      if (A) { A.pf+=sa; A.pa+=sb; if (aWon) A.w++; else A.l++; }
+      if (B) { B.pf+=sb; B.pa+=sa; if (!aWon) B.w++; else B.l++; }
+    }
+    // player standings — every player in every game (singles and doubles)
+    g.a.filter(Boolean).forEach(n => { const p=ensureP(n); p.gp++; p.pf+=sa; p.pa+=sb; if (aWon) p.w++; else p.l++; });
+    g.b.filter(Boolean).forEach(n => { const p=ensureP(n); p.gp++; p.pf+=sb; p.pa+=sa; if (!aWon) p.w++; else p.l++; });
+  });
+
+  const tRanked = [...tStats].sort((a,b)=> b.w-a.w || b.pf-a.pf || (b.pf-b.pa)-(a.pf-a.pa));
+  const tPlayed = tStats.filter(s => s.w + s.l > 0);
+  const tLeadW = tRanked.length ? tRanked[0].w : 0;
+  const tLeadPF = tRanked.length ? tRanked[0].pf : 0;
+  const tLeaders = tRanked.filter(s => s.w === tLeadW && s.pf === tLeadPF && tLeadW > 0);
+
+  const pRanked = Object.values(pStats).sort((a,b)=> b.w-a.w || b.pf-a.pf || (b.pf-b.pa)-(a.pf-a.pa));
+  const pPlayed = pRanked.filter(s => s.w + s.l > 0);
+  const pLeadW = pPlayed.length ? pPlayed[0].w : 0;
+  const pLeadPF = pPlayed.length ? pPlayed[0].pf : 0;
+
+  // banner: team leader when teams are fixed, otherwise player leader
+  let banner;
+  if (hasTeams) {
+    banner = !tPlayed.length
+      ? '<span style="color:var(--text3);font-weight:400">Enter scores below to track the night\'s leaders.</span>'
+      : tLeaders.length === 1
+        ? `<span style="color:var(--text3);font-weight:400">Leading team:</span> <span style="color:var(--green)">${tLeaders[0].names.join(' & ')}</span> <span style="color:var(--text3);font-family:'DM Mono',monospace">(${tLeaders[0].w}-${tLeaders[0].l}, ${tLeaders[0].pf} pts)</span>`
+        : `<span style="color:var(--text3);font-weight:400">Teams tied:</span> <span style="color:var(--green)">${tLeaders.map(l=>l.names.join(' & ')).join(', ')}</span> <span style="color:var(--text3);font-family:'DM Mono',monospace">(${tLeadW} wins, ${tLeadPF} pts)</span>`;
+  } else {
+    banner = !pPlayed.length
+      ? '<span style="color:var(--text3);font-weight:400">Enter scores below to track the night\'s leaders.</span>'
+      : `<span style="color:var(--text3);font-weight:400">Leading player:</span> <span style="color:var(--green)">${pPlayed[0].name}</span> <span style="color:var(--text3);font-family:'DM Mono',monospace">(${pPlayed[0].w}-${pPlayed[0].l}, ${pPlayed[0].pf} pts)</span>`;
+  }
+
+  const teamSection = hasTeams ? `
+      <div style="font-size:11px;color:var(--text3);margin:2px 0 6px;text-transform:uppercase;letter-spacing:.5px">Teams <span style="text-transform:none;letter-spacing:0">· from doubles matches · ranked by wins, then points scored</span></div>
+      <div class="tw" style="margin:0 0 16px"><table class="mt">
+        <thead><tr><th>Team</th><th class="r">W</th><th class="r">L</th><th class="r">Pts scored</th><th class="r">Pts +/−</th></tr></thead>
+        <tbody>${tRanked.map((s,i)=>`
+          <tr>
+            <td style="font-weight:500;color:var(--text)">${i===0 && tLeadW>0 ? '👑 ' : ''}${s.names.join(' & ')}</td>
+            <td class="r" style="color:var(--green)">${s.w}</td>
+            <td class="r" style="color:var(--red)">${s.l}</td>
+            <td class="r" style="font-family:'DM Mono',monospace;color:var(--text2)">${s.pf}</td>
+            <td class="r" style="font-family:'DM Mono',monospace;color:${(s.pf-s.pa)>=0?'var(--green)':'var(--red)'}">${(s.pf-s.pa)>=0?'+':''}${s.pf-s.pa}</td>
+          </tr>`).join('')}</tbody>
+      </table></div>` : (recMode === 'balanced' ? `
+      <div style="font-size:11px;color:var(--text3);margin:2px 0 12px">With an odd number of players, teams rotate each round so the singles games are shared evenly — individual standings below.</div>` : `
+      <div style="font-size:11px;color:var(--text3);margin:2px 0 12px">Individual standings across every game played tonight.</div>`);
+
+  el.innerHTML = `
+    <div class="cc" style="margin:0">
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:10px">
+        <h3 style="margin:0">Tonight's standings</h3>
+        <div style="font-size:13px;font-weight:600">${banner}</div>
+      </div>
+      ${teamSection}
+      <div style="font-size:11px;color:var(--text3);margin:2px 0 6px;text-transform:uppercase;letter-spacing:.5px">Players <span style="text-transform:none;letter-spacing:0">· every game played, singles and doubles</span></div>
+      <div class="tw" style="margin:0"><table class="mt">
+        <thead><tr><th>Player</th><th class="r">W</th><th class="r">L</th><th class="r">Games</th><th class="r">Pts scored</th><th class="r">Pts +/−</th></tr></thead>
+        <tbody>${pRanked.map((s,i)=>`
+          <tr>
+            <td style="font-weight:500;color:var(--text)">${i===0 && pLeadW>0 ? '👑 ' : ''}${s.name}</td>
+            <td class="r" style="color:var(--green)">${s.w}</td>
+            <td class="r" style="color:var(--red)">${s.l}</td>
+            <td class="r" style="font-family:'DM Mono',monospace;color:var(--text3)">${s.gp}</td>
+            <td class="r" style="font-family:'DM Mono',monospace;color:var(--text2)">${s.pf}</td>
+            <td class="r" style="font-family:'DM Mono',monospace;color:${(s.pf-s.pa)>=0?'var(--green)':'var(--red)'}">${(s.pf-s.pa)>=0?'+':''}${s.pf-s.pa}</td>
+          </tr>`).join('')}</tbody>
+      </table></div>
+    </div>`;
+}
+
+/* CLASSICS mode: show the original close games being rematched, with their
+   date / score / margin, plus how tonight's rematch is going (live as scores
+   are entered) so you can compare against the original nail-biter. */
+function renderRecClassics() {
+  const el = document.getElementById('rec-classics');
+  if (!el) return;
+  if (recMode !== 'classics') { el.innerHTML = ''; return; }
+  const games = recMatches.filter(g => g._orig);
+  if (!games.length) { el.innerHTML = ''; return; }
+
+  const rows = games.map(g => {
+    const o = g._orig;
+    const winners = g.a.join(' & '), losers = g.b.join(' & ');
+    // tonight's result (if entered): A is original winners, B is original losers
+    let tonight = '<span style="color:var(--text3)">—</span>';
+    if (g._sa != null && g._sb != null && g._sa !== g._sb) {
+      const nightWinner = g._sa > g._sb ? winners : losers;
+      const sameWinner = (g._sa > g._sb); // A (original winners) won again
+      tonight = `<span style="font-family:'DM Mono',monospace">${g._sa}–${g._sb}</span> <span style="color:${sameWinner?'var(--text3)':'var(--accent)'};font-size:11px">${sameWinner ? '(same winner)' : '↺ upset!'}</span>`;
+    }
+    return `<tr>
+      <td><span class="badge ${g.type==='Singles'?'bg-blue':'bg-amber'}">${g.type==='Singles'?'S':'D'}</span></td>
+      <td style="font-size:12px"><span style="color:var(--green)">${winners}</span> <span style="color:var(--text3)">def.</span> <span style="color:var(--text2)">${losers}</span></td>
+      <td class="r" style="font-family:'DM Mono',monospace;white-space:nowrap">${o.win}–${o.lose}</td>
+      <td class="r" style="font-family:'DM Mono',monospace;color:${o.margin<=2?'var(--green)':'var(--text2)'}">${o.margin}</td>
+      <td class="r" style="font-family:'DM Mono',monospace;font-size:11px;color:var(--text3);white-space:nowrap">${o.date||'—'}</td>
+      <td class="r">${tonight}</td>
+    </tr>`;
+  }).join('');
+
+  el.innerHTML = `
+    <div class="cc" style="margin:0">
+      <h3 style="margin:0 0 4px">The classics</h3>
+      <div style="font-size:11px;color:var(--text3);margin-bottom:10px">The closest games in your history among these players, recreated above. Original winner listed first — see if the rematch holds up.</div>
+      <div class="tw" style="margin:0"><table class="mt">
+        <thead><tr><th></th><th>Original result</th><th class="r">Score</th><th class="r">Margin</th><th class="r">Date</th><th class="r">Tonight</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table></div>
+    </div>`;
+}
+
+/* Save a generated match's score to the Google Sheet via the Apps Script
+   write-back endpoint. Fire-and-forget (the endpoint is cross-origin), so
+   we show an optimistic confirmation and refresh the live data shortly after. */
+function submitRecResult(id) {
+  const g = recMatches.find(x=>x.id===id);
+  if (!g) return;
+  const st = document.getElementById('st-'+id);
+  const sa = document.getElementById('sc-'+id+'-a');
+  const sb = document.getElementById('sc-'+id+'-b');
+  const scoreA = parseInt(sa.value, 10), scoreB = parseInt(sb.value, 10);
+  const setSt = (msg,color) => { if(st){ st.textContent=msg; st.style.color=color; } };
+
+  if (isNaN(scoreA) || isNaN(scoreB)) { setSt('Enter both scores','var(--amber)'); return; }
+  if (scoreA === scoreB) { setSt("Can't be a tie",'var(--amber)'); return; }
+  const aPlayers = g.a.filter(Boolean), bPlayers = g.b.filter(Boolean);
+  if (!aPlayers.length || !bPlayers.length) { setSt('Match has an empty side','var(--amber)'); return; }
+  if (!SUBMIT_ENDPOINT) { setSt('Score saving not set up yet','var(--red)'); return; }
+
+  const dateEl = document.getElementById('rec-date');
+  const date = (dateEl && dateEl.value) ? dateEl.value : new Date().toISOString().slice(0,10);
+
+  const payload = {
+    type: g.type,
+    date,
+    a: aPlayers,
+    b: bPlayers,
+    scoreA, scoreB,
+    secret: SUBMIT_SECRET
+  };
+
+  setSt('Saving…','var(--text3)');
+  fetch(SUBMIT_ENDPOINT, {
+    method: 'POST',
+    mode: 'no-cors',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify(payload)
+  }).then(() => {
+    g._saved = true; g._sa = scoreA; g._sb = scoreB;
+    renderRecommendations();
+    setDataStatus('loading','Saved — refreshing from the sheet…');
+    setTimeout(loadLiveData, 3500);
+  }).catch(() => {
+    setSt('Save failed — check connection','var(--red)');
+  });
+}
+function editRecMatch(id) { recEditId = id; renderRecommendations(); }
+function cancelRecEdit() { recEditId = null; renderRecommendations(); }
+function toggleEditType(id) {
+  const isD = document.getElementById(`ed-${id}-type`).value === 'Doubles';
+  document.getElementById(`ed-${id}-a1`).style.display = isD ? '' : 'none';
+  document.getElementById(`ed-${id}-b1`).style.display = isD ? '' : 'none';
+}
+function saveRecMatch(id) {
+  const g = recMatches.find(m=>m.id===id);
+  if (!g) return;
+  const isD = document.getElementById(`ed-${id}-type`).value === 'Doubles';
+  const val = sfx => document.getElementById(`ed-${id}-${sfx}`).value;
+  const a = isD ? [val('a0'), val('a1')].filter(Boolean) : [val('a0')].filter(Boolean);
+  const b = isD ? [val('b0'), val('b1')].filter(Boolean) : [val('b0')].filter(Boolean);
+  if (!a.length || !b.length) { alert('Each side needs at least one player.'); return; }
+  // if the lineup changed, it's no longer a faithful rematch — drop the classic marker
+  if (g._orig) {
+    const sameSet = (x,y) => x.length===y.length && [...x].sort().join(',')===[...y].sort().join(',');
+    if (!(g.type === (isD?'Doubles':'Singles') && sameSet(g.a,a) && sameSet(g.b,b))) g._orig = null;
+  }
+  g.type = isD ? 'Doubles' : 'Singles';
+  g.a = a; g.b = b;
+  recEditId = null;
+  renderRecommendations();
+}
+
+/* ═══════════════════════════════════════════════
    PLAYER PROFILE MODAL
    Career view for one player, computed from MATCHES.
    Honors the active date range + match type.
@@ -2070,21 +2982,14 @@ function closeProfile() {
 document.addEventListener('keydown', e => { if (e.key === 'Escape') closeProfile(); });
 
 /* ═══════════════════════════════════════════════
-   JOTFORM RESIZE
-   ═══════════════════════════════════════════════ */
-window.addEventListener('message',e=>{
-  if(e.data?.action==='setHeight'){
-    const f=document.getElementById('jfi');
-    if(f) f.style.height=(e.data.height+40)+'px';
-  }
-});
-
-/* ═══════════════════════════════════════════════
    INIT
    ═══════════════════════════════════════════════ */
 initDates();
 initScoresPills();
 initProjPills();
+initRecPills();
+(function(){ const rd=document.getElementById('rec-date'); if(rd && !rd.value) rd.value=new Date().toISOString().slice(0,10); })();
+onRecModeChange();
 render();
 loadLiveData();
 </script>
