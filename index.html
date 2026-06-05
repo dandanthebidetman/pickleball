@@ -2063,9 +2063,9 @@ let recTeams = null;      // fixed teams for balanced mode: [[p1,p2], ...]
 let recClassics = [];     // for classics mode: original games being rematched, parallel to recMatches
 
 const REC_MODE_DESC = {
-  default:  'Mixed games that spread partners and opponents around — nobody plays the same combo twice if it can be helped.',
-  balanced: 'Strong+weak pairings so teams are even, and everyone plays an equal number of games with an even split of doubles and singles. With an even number of players teams stay fixed all night; with an odd number they rotate so the singles are shared fairly.',
-  classics: 'Recreates the closest games in your history (smallest point margins) among the selected players, so you can run back the nail-biters. The original date and score for each is listed below to compare against.'
+  default:  'Mixed games that spread partners and opponents around — nobody plays the same combo twice if it can be helped. When singles are in the mix, they\u2019re shared evenly and no one plays singles two rounds in a row.',
+  balanced: 'Strong+weak pairings so teams are even, and everyone plays an equal number of games with an even split of doubles and singles — and nobody plays singles two rounds in a row. With an even number of players teams stay fixed all night; with an odd number they rotate so the singles are shared fairly.',
+  classics: 'Recreates the closest games in your history (smallest point margins) among the selected players, so you can run back the nail-biters. The original date and score for each is listed below to compare against. Any extra games keep singles even and avoid back-to-back singles.'
 };
 function onRecModeChange() {
   const d = document.getElementById('rec-mode-desc');
@@ -2251,9 +2251,35 @@ function pairSingles(players, versus) {
   return matches;
 }
 
+/* Decide which of this round's chosen players take the singles slots vs the
+   doubles slots, enforcing two rules that apply to EVERY matchmaking mode:
+     1) No player plays singles in two consecutive rounds (avoided whenever
+        there are enough other players to fill the singles slots).
+     2) Singles are spread so each player's singles vs doubles counts stay as
+        even as possible (players who've played the fewest singles go first).
+   state = { ps, pd, lastS } per-player maps; `round` is the current round #.
+   Returns { singlesPlayers, doublesPlayers }. */
+function assignFormats(selected, d, s, state, round) {
+  const nSingles = 2 * s;
+  if (nSingles <= 0) return { singlesPlayers: [], doublesPlayers: selected.slice() };
+  if (nSingles >= selected.length) return { singlesPlayers: selected.slice(), doublesPlayers: [] };
+  const ps = state.ps || {}, pd = state.pd || {}, lastS = state.lastS || {};
+  const g = (m,p) => m[p] || 0;
+  const ranked = [...selected].sort((a,b) => {
+    const aBack = (lastS[a] === round - 1) ? 1 : 0;   // played singles last round?
+    const bBack = (lastS[b] === round - 1) ? 1 : 0;
+    if (aBack !== bBack) return aBack - bBack;          // rule 1: non-back-to-back first
+    if (g(ps,a) !== g(ps,b)) return g(ps,a) - g(ps,b);  // rule 2: fewer singles first
+    if (g(pd,b) !== g(pd,a)) return g(pd,b) - g(pd,a);  //         more doubles first
+    return (g(ps,a)+g(pd,a)) - (g(ps,b)+g(pd,b)) || Math.random()-0.5; // fewer total games
+  });
+  return { singlesPlayers: ranked.slice(0, nSingles), doublesPlayers: ranked.slice(nSingles) };
+}
+
 function buildOneSchedule(pool, courts, numMatches) {
   const games = [];
-  const gp = {}; pool.forEach(p=>gp[p]=0);
+  const gp = {}, ps = {}, pd = {}, lastS = {};
+  pool.forEach(p=>{ gp[p]=0; ps[p]=0; pd[p]=0; });
   const partner = {}, versus = {};
   const bump = (m,a,b)=>{ m[pairKey(a,b)]=(m[pairKey(a,b)]||0)+1; };
 
@@ -2266,18 +2292,19 @@ function buildOneSchedule(pool, courts, numMatches) {
     if (need < 2) break; // can't form any game
     // pick players: fewest games first, random tiebreak
     const playing = shuffle(pool).sort((a,b)=>gp[a]-gp[b]).slice(0, need);
-    const grp = shuffle(playing);
-    const doublesPlayers = grp.slice(0, 4*d);
-    const singlesPlayers = grp.slice(4*d, 4*d + 2*s);
+    // assign singles vs doubles slots: no back-to-back singles + even D/S split
+    const { singlesPlayers, doublesPlayers } = assignFormats(playing, d, s, {ps,pd,lastS}, round);
 
     const roundGames = [];
     // doubles: greedy teams (minimize repeat partners) → pair into matches (minimize repeat matchups)
-    roundGames.push(...pairTeams(formTeams(doublesPlayers, partner), versus));
+    roundGames.push(...pairTeams(formTeams(shuffle(doublesPlayers), partner), versus));
     // singles
     roundGames.push(...pairSingles(singlesPlayers, versus));
 
     roundGames.forEach(g => {
       [...g.a,...g.b].forEach(p=>gp[p]++);
+      if (g.type==='Singles') g.a.concat(g.b).forEach(p=>{ ps[p]++; lastS[p]=round; });
+      else                    g.a.concat(g.b).forEach(p=>{ pd[p]++; });
       if (g.a.length===2) bump(partner,g.a[0],g.a[1]);
       if (g.b.length===2) bump(partner,g.b[0],g.b[1]);
       for (const x of g.a) for (const y of g.b) bump(versus,x,y);
@@ -2343,6 +2370,7 @@ function buildBalancedSchedule(teams, courts, numMatches) {
   const tg = teams.map(()=>0);                                  // doubles games per team (= doubles games per player, since teams are pairs)
   const vs = {};                                                // team-vs-team meeting counts (varies matchups)
   const pSin = {};                                              // singles games per player
+  const lastS = {};                                             // round each player last played singles
   const allPlayers = [];
   teams.forEach(t => t.forEach(p => { pSin[p] = 0; allPlayers.push(p); }));
   const fullTeams = teams.map((t,i)=>i).filter(i => teams[i].length === 2);
@@ -2378,23 +2406,25 @@ function buildBalancedSchedule(teams, courts, numMatches) {
       tg[t1]++; tg[t2]++; left--;
     }
 
-    // 2) singles: from players free this round, pick the neediest (fewest singles
-    //    so far, then fewest total games) so each player's singles count — and
-    //    overall game count — stays as even as possible. Prefer cross-team foes.
+    // 2) singles: from players free this round, pick the neediest — but never put
+    //    a player in singles two rounds running if there's anyone else available
+    //    (fewest singles so far, then fewest total games). Prefer cross-team foes.
     if (left > 0 && s > 0) {
       let madeSingles = 0;
       while (madeSingles < s && left > 0) {
         const avail = allPlayers.filter(p => !usedPlayers.has(p));
         if (avail.length < 2) break;
-        avail.sort((a,b)=> pSin[a]-pSin[b] || totGames(a)-totGames(b));
+        const back = p => (lastS[p] === round - 1) ? 1 : 0;
+        avail.sort((a,b)=> back(a)-back(b) || pSin[a]-pSin[b] || totGames(a)-totGames(b));
         const p1 = avail[0];
         const rest = avail.slice(1).sort((a,b)=>
-          (teamOf[a]===teamOf[p1]?1:0) - (teamOf[b]===teamOf[p1]?1:0)   // a different team first
+          back(a)-back(b)                                              // avoid back-to-back first
+          || (teamOf[a]===teamOf[p1]?1:0) - (teamOf[b]===teamOf[p1]?1:0)   // a different team next
           || pSin[a]-pSin[b] || totGames(a)-totGames(b));
         const p2 = rest[0];
         usedPlayers.add(p1); usedPlayers.add(p2);
         roundGames.push({ round, type:'Singles', a:[p1], b:[p2], _ti:teamOf[p1], _tj:teamOf[p2] });
-        pSin[p1]++; pSin[p2]++;
+        pSin[p1]++; pSin[p2]++; lastS[p1]=round; lastS[p2]=round;
         madeSingles++; left--;
       }
     }
@@ -2413,7 +2443,7 @@ function buildBalancedSchedule(teams, courts, numMatches) {
    with ~equal games and ~equal doubles and singles — nobody is stuck. */
 function buildBalancedRotating(pool, courts, numMatches) {
   const games = [];
-  const gp = {}, pd = {}, ps = {};
+  const gp = {}, pd = {}, ps = {}, lastS = {};
   pool.forEach(p => { gp[p]=0; pd[p]=0; ps[p]=0; });
   const P = pool.length;
   let left = numMatches, round = 0, guard = 0;
@@ -2427,11 +2457,8 @@ function buildBalancedRotating(pool, courts, numMatches) {
 
     // choose who plays: fewest games first (byes rotate), random tiebreak
     const selected = [...pool].sort((a,b)=> gp[a]-gp[b] || Math.random()-0.5).slice(0, need);
-    // assign formats: players who've played proportionally more doubles get the
-    // singles slots (and vice versa) so each player's D/S mix stays even
-    const order = [...selected].sort((a,b)=> (pd[b]-ps[b]) - (pd[a]-ps[a]) || Math.random()-0.5);
-    const singlesPlayers = order.slice(0, 2*s);
-    const doublesPlayers = order.slice(2*s);
+    // assign formats: no back-to-back singles + keep each player's D/S split even
+    const { singlesPlayers, doublesPlayers } = assignFormats(selected, d, s, {ps,pd,lastS}, round);
 
     const roundGames = [];
     // doubles: balanced teams (strongest+weakest) on each court
@@ -2449,7 +2476,7 @@ function buildBalancedRotating(pool, courts, numMatches) {
       const two = sSorted.slice(c*2, c*2+2);
       if (two.length < 2) break;
       roundGames.push({ round, type:'Singles', a:[two[0]], b:[two[1]] });
-      two.forEach(p=>{ gp[p]++; ps[p]++; });
+      two.forEach(p=>{ gp[p]++; ps[p]++; lastS[p]=round; });
     }
 
     if (!roundGames.length) break;
@@ -2495,7 +2522,8 @@ function buildClassicsSchedule(pool, courts, numMatches) {
   //    and filling any leftover slots with fresh matchups so nobody sits out
   //    unnecessarily.
   const games = [];
-  const gp = {}; pool.forEach(p => gp[p] = 0);  // games played per player (fairness)
+  const gp = {}, ps = {}, pd = {}, lastS = {};
+  pool.forEach(p => { gp[p] = 0; ps[p] = 0; pd[p] = 0; });  // games / singles / doubles per player
   const consumed = new Set();                    // classic signatures already scheduled
   let left = numMatches, round = 0;
 
@@ -2510,13 +2538,15 @@ function buildClassicsSchedule(pool, courts, numMatches) {
     const avail = side => side.every(p => inPool.has(p) && !usedThisRound.has(p));
 
     // pick the best available classic of a given type: unused, players free this
-    // round, fewest games so far, then closest margin
+    // round, fewest games so far, then (for singles) avoid back-to-back, then
+    // closest margin
     const pickClassic = (type) => {
       const cand = ranked.filter(c => c.type === type && !consumed.has(sig(c)) && avail([...c.a, ...c.b]));
       if (!cand.length) return null;
+      const backCount = c => (type==='Singles' ? [...c.a, ...c.b].filter(n => lastS[n] === round-1).length : 0);
       cand.sort((p,q) => {
         const gpSum = c => [...c.a, ...c.b].reduce((t,n)=>t+gp[n], 0);
-        return gpSum(p) - gpSum(q) || p.margin - q.margin;
+        return gpSum(p) - gpSum(q) || backCount(p) - backCount(q) || p.margin - q.margin;
       });
       const c = cand[0];
       consumed.add(sig(c));
@@ -2538,22 +2568,35 @@ function buildClassicsSchedule(pool, courts, numMatches) {
       needS--; i--;
     }
 
-    // 2b. fill any leftover slots with fresh matchups among remaining players
-    //     (fewest games first) so the courts stay full
+    // 2b. fill any leftover slots with fresh matchups. Decide who plays (fewest
+    //     games first), then split those players into singles/doubles with the
+    //     shared rule helper so fresh singles avoid back-to-back and keep each
+    //     player's doubles/singles mix even.
     let remaining = pool.filter(p => !usedThisRound.has(p)).sort((a,b)=> gp[a]-gp[b]);
-    while (needD > 0 && remaining.length >= 4) {
-      const four = remaining.slice(0,4); remaining = remaining.slice(4);
+    const needPlayers = 4*needD + 2*needS;
+    const playingFresh = remaining.slice(0, needPlayers);
+    const { singlesPlayers: freshS, doublesPlayers: freshD } =
+      assignFormats(playingFresh, needD, needS, {ps, pd, lastS}, round);
+    for (let c = 0; needD > 0 && c*4 < freshD.length; c++) {
+      const four = freshD.slice(c*4, c*4+4);
+      if (four.length < 4) break;
       roundGames.push({ type:'Doubles', a:[four[0], four[3]], b:[four[1], four[2]] });
       needD--;
     }
-    while (needS > 0 && remaining.length >= 2) {
-      const two = remaining.slice(0,2); remaining = remaining.slice(2);
+    for (let c = 0; needS > 0 && c*2 < freshS.length; c++) {
+      const two = freshS.slice(c*2, c*2+2);
+      if (two.length < 2) break;
       roundGames.push({ type:'Singles', a:[two[0]], b:[two[1]] });
       needS--;
     }
 
     if (!roundGames.length) break;  // can't form anything — stop
-    roundGames.forEach(g => { [...g.a,...g.b].forEach(p=>gp[p]++); games.push({ round, ...g }); left--; });
+    roundGames.forEach(g => {
+      [...g.a,...g.b].forEach(p=>gp[p]++);
+      if (g.type==='Singles') [...g.a,...g.b].forEach(p=>{ ps[p]++; lastS[p]=round; });
+      else                    [...g.a,...g.b].forEach(p=>{ pd[p]++; });
+      games.push({ round, ...g }); left--;
+    });
   }
   return games;
 }
