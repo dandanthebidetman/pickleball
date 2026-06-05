@@ -969,7 +969,7 @@ async function loadLiveData() {
       initProjPills();
       initRecPills();
       render();
-      const stamp = new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'});
+      const stamp = new Date().toLocaleTimeString('en-US', {hour:'2-digit', minute:'2-digit', timeZone:'America/New_York'}) + ' ET';
       setDataStatus('ok', `Live · ${PLAYERS.filter(p=>p.matches>0).length} players, ${MATCHES.length} matches · updated ${stamp}`);
     } else {
       throw new Error('No tabs returned data');
@@ -1035,9 +1035,33 @@ let charts = {};
 
 /* ═══════════════════════════════════════════════
    DATE HELPERS
+
+   All "today" calculations use Eastern Time (America/New_York) so the
+   dates written to the sheet, exports, and filters reflect the local
+   calendar day in Michigan — not the device's timezone or UTC. Using the
+   America/New_York zone (rather than a fixed UTC-5) keeps the date correct
+   year-round, since it automatically follows EST in winter and EDT in summer.
    ═══════════════════════════════════════════════ */
-const isoToday = () => new Date().toISOString().slice(0,10);
-const isoDaysAgo = n => { const d=new Date(); d.setDate(d.getDate()-n); return d.toISOString().slice(0,10); };
+/* current Eastern calendar date as {y,m,d} numbers (optionally for a given Date) */
+function easternParts(date) {
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'America/New_York', year: 'numeric', month: '2-digit', day: '2-digit'
+  }).formatToParts(date || new Date());
+  const g = t => parts.find(p => p.type === t).value;
+  return { y: +g('year'), m: +g('month'), d: +g('day') };
+}
+/* a human-readable Eastern date+time string for export stamps */
+function easternStamp(date) {
+  return new Date(date || Date.now()).toLocaleString('en-US', { timeZone: 'America/New_York' }) + ' ET';
+}
+const isoToday = () => { const p = easternParts(); return `${p.y}-${String(p.m).padStart(2,'0')}-${String(p.d).padStart(2,'0')}`; };
+const isoDaysAgo = n => {
+  const p = easternParts();
+  // anchor at noon UTC of the Eastern calendar date, then step whole days (avoids DST/midnight edges)
+  const d = new Date(Date.UTC(p.y, p.m - 1, p.d, 12));
+  d.setUTCDate(d.getUTCDate() - n);
+  return `${d.getUTCFullYear()}-${String(d.getUTCMonth()+1).padStart(2,'0')}-${String(d.getUTCDate()).padStart(2,'0')}`;
+};
 
 /* ── SEASON LOGIC ──
    Each season ends ON the first Saturday of September.
@@ -2867,7 +2891,7 @@ function submitRecResult(id) {
   if (!SUBMIT_ENDPOINT) { setSt('Score saving not set up yet','var(--red)'); return; }
 
   const dateEl = document.getElementById('rec-date');
-  const date = (dateEl && dateEl.value) ? dateEl.value : new Date().toISOString().slice(0,10);
+  const date = (dateEl && dateEl.value) ? dateEl.value : isoToday();
 
   const payload = {
     type: g.type,
@@ -3517,7 +3541,7 @@ function exportCsv(tabName, sections) {
   const lines = [];
   lines.push(csvEscape(`PickleBall Tracker — ${tabName}`));
   if (seasonLbl) lines.push(csvEscape(`Season: ${seasonLbl}  (${from} to ${to})`));
-  lines.push(csvEscape(`Exported ${new Date().toLocaleString()}`));
+  lines.push(csvEscape(`Exported ${easternStamp()}`));
   lines.push('');
   sections.forEach((sec, i) => {
     if (sec.label) lines.push(csvEscape(sec.label));
@@ -3544,7 +3568,7 @@ function exportXlsx(tabName, sections) {
     if (idx === 0) {
       aoa.push([`PickleBall Tracker — ${tabName}`]);
       if (seasonLbl) aoa.push([`Season: ${seasonLbl} (${from} to ${to})`]);
-      aoa.push([`Exported ${new Date().toLocaleString()}`]);
+      aoa.push([`Exported ${easternStamp()}`]);
       aoa.push([]);
     }
     if (sec.label) aoa.push([sec.label]);
@@ -3594,7 +3618,7 @@ function exportPdf(tabName, sections) {
     doc.setTextColor(230, 237, 243); doc.setFont(undefined, 'bold'); doc.setFontSize(16);
     doc.text(`PickleBall Tracker — ${tabName}`, margin, 30);
     doc.setFont(undefined, 'normal'); doc.setFontSize(9); doc.setTextColor(139, 148, 158);
-    const sub = (seasonLbl ? `Season: ${seasonLbl}  (${from} to ${to})   ·   ` : '') + `Exported ${new Date().toLocaleString()}`;
+    const sub = (seasonLbl ? `Season: ${seasonLbl}  (${from} to ${to})   ·   ` : '') + `Exported ${easternStamp()}`;
     doc.text(sub, margin, 47);
 
     // scale the screenshot to the content width, then slice across pages
@@ -3644,7 +3668,7 @@ function exportPdfTables(tabName, sections, JsPDF) {
   doc.text(`PickleBall Tracker — ${tabName}`, 40, 40);
   doc.setFontSize(9); doc.setTextColor(110);
   const sub = seasonLbl ? `Season: ${seasonLbl}  (${from} to ${to})` : '';
-  doc.text([sub, `Exported ${new Date().toLocaleString()}`].filter(Boolean), 40, 58);
+  doc.text([sub, `Exported ${easternStamp()}`].filter(Boolean), 40, 58);
   let y = 78;
   sections.forEach(sec => {
     const rows = sec.rows || [];
@@ -3665,7 +3689,7 @@ function exportPdfTables(tabName, sections, JsPDF) {
 
 /* helpers */
 function cleanCell(v){ v = (v==null?'':String(v)).replace(/\u00a0/g,' ').replace(/\s+/g,' ').trim(); const n = (v!=='' && !isNaN(v)) ? Number(v) : null; return (n!==null && String(n)===v) ? n : v; }
-function stampDate(){ return new Date().toISOString().slice(0,10); }
+function stampDate(){ return isoToday(); }
 function downloadBlob(blob, filename){
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
@@ -3681,7 +3705,7 @@ initDates();
 initScoresPills();
 initProjPills();
 initRecPills();
-(function(){ const rd=document.getElementById('rec-date'); if(rd && !rd.value) rd.value=new Date().toISOString().slice(0,10); })();
+(function(){ const rd=document.getElementById('rec-date'); if(rd && !rd.value) rd.value=isoToday(); })();
 onRecModeChange();
 render();
 loadLiveData();
