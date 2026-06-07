@@ -504,7 +504,7 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;fon
   <div class="ctrl" style="display:flex;flex-wrap:wrap;gap:16px;align-items:flex-end">
     <div>
       <div style="font-size:12px;color:var(--text3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:6px">2 · Courts</div>
-      <input type="number" id="rec-courts" min="1" max="12" value="2" class="mm-sel" style="width:70px;font-family:'DM Mono',monospace;padding:7px 10px;font-size:14px">
+      <input type="number" id="rec-courts" min="1" max="12" value="2" onchange="onRecCourtsChange()" class="mm-sel" style="width:70px;font-family:'DM Mono',monospace;padding:7px 10px;font-size:14px">
     </div>
     <div>
       <div style="font-size:12px;color:var(--text3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:6px">…matches to generate</div>
@@ -518,6 +518,10 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;fon
         <option value="classics">Classics (rematch close games)</option>
       </select>
     </div>
+    <div id="mm-manual-toggle" style="display:none;align-items:center;gap:7px;padding-bottom:4px">
+      <input type="checkbox" id="rec-manual-first" onchange="onManualFirstToggle()" style="width:16px;height:16px;accent-color:var(--accent);cursor:pointer">
+      <label for="rec-manual-first" style="font-size:12px;color:var(--text2);cursor:pointer;user-select:none;white-space:nowrap">Set the first round manually</label>
+    </div>
     <div>
       <div style="font-size:12px;color:var(--text3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:6px">Date for saved results</div>
       <input type="date" id="rec-date" class="mm-sel" style="padding:7px 10px;font-size:14px;color-scheme:dark">
@@ -526,6 +530,8 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;fon
     <span id="rec-hint" style="font-size:12px;color:var(--text3)"></span>
   </div>
   <div id="rec-mode-desc" style="font-size:12px;color:var(--text3);margin-top:-2px"></div>
+
+  <div id="rec-manual-panel" style="display:none;margin-top:14px"></div>
 
   <div id="rec-standings" style="margin:14px 0 0"></div>
   <div id="rec-classics" style="margin:14px 0 0"></div>
@@ -2071,6 +2077,114 @@ function onRecModeChange() {
   const d = document.getElementById('rec-mode-desc');
   const m = (document.getElementById('rec-mode')||{}).value || 'default';
   if (d) d.textContent = REC_MODE_DESC[m] || '';
+  // the manual first-round option only applies to the Default style (Balanced
+  // uses fixed teams and Classics recreates historical games, so a hand-picked
+  // first round doesn't fit those). Hide + reset it outside Default.
+  const tog = document.getElementById('mm-manual-toggle');
+  const cb  = document.getElementById('rec-manual-first');
+  const panel = document.getElementById('rec-manual-panel');
+  if (m === 'default') {
+    if (tog) tog.style.display = 'flex';
+  } else {
+    if (tog) tog.style.display = 'none';
+    if (cb)  cb.checked = false;
+    if (panel) { panel.style.display = 'none'; panel.innerHTML = ''; }
+  }
+}
+
+/* —— MANUAL FIRST ROUND ——
+   Lets you hand-pick who's on each court for round 1 (handy when someone's
+   running late but you want to start). Rounds 2+ are auto-built off it with the
+   normal Default logic, so they avoid repeating these partners/matchups and
+   keep play time fair. */
+function onManualFirstToggle() {
+  const on = !!(document.getElementById('rec-manual-first')||{}).checked;
+  const panel = document.getElementById('rec-manual-panel');
+  if (!panel) return;
+  if (on) { renderManualPanel(); panel.style.display = 'block'; }
+  else    { panel.style.display = 'none'; panel.innerHTML = ''; }
+}
+function onRecCourtsChange() {
+  // if the manual panel is open, the number of court slots just changed
+  if ((document.getElementById('rec-manual-first')||{}).checked) renderManualPanel();
+}
+function renderManualPanel() {
+  const panel = document.getElementById('rec-manual-panel');
+  if (!panel) return;
+  const pool = getRecPool();
+  const courts = Math.max(1, parseInt((document.getElementById('rec-courts')||{}).value)||1);
+  if (pool.length < 2) {
+    panel.innerHTML = `<div class="cc" style="margin:0"><h3 style="margin:0 0 4px">First round — your call</h3><div style="font-size:13px;color:var(--amber)">Pick at least 2 players above (Step 1), then this fills in with court slots.</div></div>`;
+    return;
+  }
+  const opt = sel => ['<option value="">— empty —</option>'].concat(
+    pool.map(n => `<option value="${n.replace(/"/g,'&quot;')}"${n===sel?' selected':''}>${n}</option>`)
+  ).join('');
+  let slots = '';
+  for (let i = 0; i < courts; i++) {
+    slots += `
+      <div class="mm-match" style="border-style:dashed">
+        <div class="mm-court">Court ${i+1}</div>
+        <div class="mm-teams" style="gap:6px">
+          <select class="mm-sel" id="mm-man-${i}-a0">${opt('')}</select>
+          <select class="mm-sel" id="mm-man-${i}-a1">${opt('')}</select>
+          <span class="mm-vs">vs</span>
+          <select class="mm-sel" id="mm-man-${i}-b0">${opt('')}</select>
+          <select class="mm-sel" id="mm-man-${i}-b1">${opt('')}</select>
+          <select class="mm-sel" id="mm-man-${i}-type" onchange="toggleManualType(${i})">
+            <option value="Doubles" selected>Doubles</option>
+            <option value="Singles">Singles</option>
+          </select>
+        </div>
+      </div>`;
+  }
+  panel.innerHTML = `
+    <div class="cc" style="margin:0">
+      <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:4px">
+        <h3 style="margin:0">First round — your call</h3>
+        <button class="mm-btn" onclick="renderManualPanel()" style="text-transform:none;letter-spacing:0">↻ Rebuild from current players &amp; courts</button>
+      </div>
+      <div style="font-size:12px;color:var(--text3);margin-bottom:12px">Set who's on each court for round 1 (leave a court's dropdowns empty to skip it). Everything after this round is auto-built off it with the normal Default logic — it won't repeat these partners or matchups and keeps play time fair. Players you didn't slot in here just get picked up starting in round 2.</div>
+      ${slots}
+    </div>`;
+}
+function toggleManualType(i) {
+  const sel = document.getElementById(`mm-man-${i}-type`);
+  if (!sel) return;
+  const isD = sel.value === 'Doubles';
+  const a1 = document.getElementById(`mm-man-${i}-a1`);
+  const b1 = document.getElementById(`mm-man-${i}-b1`);
+  if (a1) a1.style.display = isD ? '' : 'none';
+  if (b1) b1.style.display = isD ? '' : 'none';
+}
+/* Read + validate the hand-picked first round. Returns {games:[{type,a,b}]} or
+   {error:'…'}. Empty courts are skipped; a player can't appear twice. */
+function collectManualRound() {
+  const pool = getRecPool();
+  const inPool = new Set(pool);
+  const courts = Math.max(1, parseInt((document.getElementById('rec-courts')||{}).value)||1);
+  const games = [], used = new Set();
+  for (let i = 0; i < courts; i++) {
+    const typeEl = document.getElementById(`mm-man-${i}-type`);
+    if (!typeEl) continue;
+    const isD = typeEl.value === 'Doubles';
+    const v = sfx => { const el = document.getElementById(`mm-man-${i}-${sfx}`); return el ? el.value : ''; };
+    const a = (isD ? [v('a0'), v('a1')] : [v('a0')]).filter(Boolean);
+    const b = (isD ? [v('b0'), v('b1')] : [v('b0')]).filter(Boolean);
+    if (!a.length && !b.length) continue;                       // empty court — skip
+    if (!a.length || !b.length)
+      return { error: `Court ${i+1}: each side needs a player (or clear the whole court to skip it).` };
+    if (isD && (a.length < 2 || b.length < 2))
+      return { error: `Court ${i+1}: a doubles game needs two players per side — fill both or switch it to Singles.` };
+    for (const n of [...a, ...b]) {
+      if (!inPool.has(n)) return { error: `Court ${i+1}: "${n}" isn't in tonight's players.` };
+      if (used.has(n))    return { error: `"${n}" is on two courts at once — each player can only play once in the first round.` };
+      used.add(n);
+    }
+    games.push({ type: isD ? 'Doubles' : 'Singles', a, b });
+  }
+  if (!games.length) return { error: 'Set up at least one court for the first round.' };
+  return { games };
 }
 
 /* games each player has played within the active season/date window */
@@ -2239,12 +2353,20 @@ function pairTeams(teams, versus) {
   return matches;
 }
 /* pair singles players minimizing repeated matchups */
-function pairSingles(players, versus) {
+/* pair singles players, avoiding repeated SINGLES matchups first (so the same
+   two people don't keep playing each other on a given night unless forced),
+   then falling back to overall opponent variety. */
+function pairSingles(players, versusS, versus) {
   const rem = [...players], matches = [];
   while (rem.length >= 2) {
     const p1 = rem.shift();
-    let bi=0, bc=Infinity;
-    for (let k=0;k<rem.length;k++) { const c=versus[pairKey(p1,rem[k])]||0; if (c<bc){bc=c;bi=k;} }
+    let bi=0, bs=Infinity, bv=Infinity;
+    for (let k=0;k<rem.length;k++) {
+      const key = pairKey(p1, rem[k]);
+      const cs = versusS[key]||0;   // times this exact singles matchup already happened tonight
+      const cv = versus[key]||0;    // times they've faced each other at all (singles or doubles)
+      if (cs < bs || (cs === bs && cv < bv)) { bs=cs; bv=cv; bi=k; }
+    }
     matches.push({ type:'Singles', a:[p1], b:[rem[bi]] });
     rem.splice(bi,1);
   }
@@ -2276,14 +2398,34 @@ function assignFormats(selected, d, s, state, round) {
   return { singlesPlayers: ranked.slice(0, nSingles), doublesPlayers: ranked.slice(nSingles) };
 }
 
-function buildOneSchedule(pool, courts, numMatches) {
+function buildOneSchedule(pool, courts, numMatches, seed) {
   const games = [];
   const gp = {}, ps = {}, pd = {}, lastS = {};
   pool.forEach(p=>{ gp[p]=0; ps[p]=0; pd[p]=0; });
-  const partner = {}, versus = {};
+  const partner = {}, versus = {}, versusS = {};
   const bump = (m,a,b)=>{ m[pairKey(a,b)]=(m[pairKey(a,b)]||0)+1; };
 
   let left = numMatches, round = 0;
+
+  // Optional hand-picked first round: lock it in as round 1 and fold its play
+  // counts, partnerships and matchups into the running state so every later
+  // round is built "off" it — spreading partners/opponents and keeping games
+  // fair, exactly as if the scheduler had produced round 1 itself.
+  if (seed && seed.games && seed.games.length) {
+    round = 1;
+    seed.games.forEach(g => {
+      [...g.a, ...g.b].forEach(p => { if (gp[p]==null) { gp[p]=0; ps[p]=0; pd[p]=0; } gp[p]++; });
+      if (g.type === 'Singles') [...g.a, ...g.b].forEach(p => { ps[p]++; lastS[p]=round; });
+      else                      [...g.a, ...g.b].forEach(p => { pd[p]++; });
+      if (g.a.length===2) bump(partner, g.a[0], g.a[1]);
+      if (g.b.length===2) bump(partner, g.b[0], g.b[1]);
+      for (const x of g.a) for (const y of g.b) bump(versus, x, y);
+      if (g.type === 'Singles') bump(versusS, g.a[0], g.b[0]);
+      games.push({ round, type:g.type, a:g.a.slice(), b:g.b.slice() });
+      left--;
+    });
+  }
+
   while (left > 0) {
     round++;
     const courtsThis = Math.min(courts, left);
@@ -2299,7 +2441,7 @@ function buildOneSchedule(pool, courts, numMatches) {
     // doubles: greedy teams (minimize repeat partners) → pair into matches (minimize repeat matchups)
     roundGames.push(...pairTeams(formTeams(shuffle(doublesPlayers), partner), versus));
     // singles
-    roundGames.push(...pairSingles(singlesPlayers, versus));
+    roundGames.push(...pairSingles(singlesPlayers, versusS, versus));
 
     roundGames.forEach(g => {
       [...g.a,...g.b].forEach(p=>gp[p]++);
@@ -2308,6 +2450,7 @@ function buildOneSchedule(pool, courts, numMatches) {
       if (g.a.length===2) bump(partner,g.a[0],g.a[1]);
       if (g.b.length===2) bump(partner,g.b[0],g.b[1]);
       for (const x of g.a) for (const y of g.b) bump(versus,x,y);
+      if (g.type==='Singles') bump(versusS,g.a[0],g.b[0]);
       games.push({ round, ...g });
       left--;
     });
@@ -2317,7 +2460,7 @@ function buildOneSchedule(pool, courts, numMatches) {
 }
 
 function scoreSchedule(games, pool) {
-  const gp={}, partner={}, versus={};
+  const gp={}, partner={}, versus={}, versusS={};
   pool.forEach(p=>gp[p]=0);
   const bump=(m,a,b)=>{ m[pairKey(a,b)]=(m[pairKey(a,b)]||0)+1; };
   games.forEach(g=>{
@@ -2325,10 +2468,14 @@ function scoreSchedule(games, pool) {
     if (g.a.length===2) bump(partner,g.a[0],g.a[1]);
     if (g.b.length===2) bump(partner,g.b[0],g.b[1]);
     for (const x of g.a) for (const y of g.b) bump(versus,x,y);
+    if (g.a.length===1 && g.b.length===1) bump(versusS,g.a[0],g.b[0]);  // singles matchup
   });
   let repeats=0;
   // progressive penalty so partnerships are spread evenly (a 3rd pairing hurts far more than a 2nd)
   Object.values(partner).forEach(c=>{ if(c>1) repeats += (c-1)*(c-1)*5; });
+  // same idea for repeated singles matchups — keep the same two players from
+  // playing each other over and over in singles on one night unless forced
+  Object.values(versusS).forEach(c=>{ if(c>1) repeats += (c-1)*(c-1)*5; });
   Object.values(versus).forEach(c=>{ if(c>1) repeats += (c-1); });
   const counts = pool.map(p=>gp[p]);
   const fair = counts.length ? (Math.max(...counts)-Math.min(...counts)) : 0;
@@ -2637,11 +2784,23 @@ function generateRecommendations() {
       document.getElementById('rec-hint').style.color = 'var(--amber)';
     }
   } else {
-    // DEFAULT — unchanged: try many random schedules, keep the one that best
+    // DEFAULT — try many random schedules, keep the one that best
     // spreads partners/opponents and keeps games even.
+    // If the user hand-picked the first round, lock it in as round 1 and build
+    // the rest off it; round 1 stays fixed across attempts while rounds 2+ vary.
+    let manualSeed = null;
+    if ((document.getElementById('rec-manual-first') || {}).checked) {
+      const res = collectManualRound();
+      if (res.error) { hint.textContent = res.error; hint.style.color='var(--amber)'; return; }
+      if (res.games.length > num) {
+        hint.textContent = `Your first round has ${res.games.length} games but you only asked for ${num} total — raise "matches to generate".`;
+        hint.style.color='var(--amber)'; return;
+      }
+      manualSeed = { games: res.games };
+    }
     let best=null;
     for (let attempt=0; attempt<300; attempt++) {
-      const s = buildOneSchedule(pool, courts, num);
+      const s = buildOneSchedule(pool, courts, num, manualSeed);
       const sc = scoreSchedule(s, pool);
       if (!best || sc < best.sc) best = { sched: s, sc };
     }
